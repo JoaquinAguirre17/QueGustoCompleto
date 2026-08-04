@@ -1,10 +1,67 @@
 import mongoose from "mongoose";
 
+const modifierOptionSchema = new mongoose.Schema(
+  {
+    label: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    price: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    active: {
+      type: Boolean,
+      default: true
+    }
+  },
+  { _id: false }
+);
+
+const modifierSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    type: {
+      type: String,
+      enum: ["single", "multiple"],
+      default: "single"
+    },
+
+    required: {
+      type: Boolean,
+      default: false
+    },
+
+    minSelect: {
+      type: Number,
+      default: 0
+    },
+
+    maxSelect: {
+      type: Number,
+      default: 1
+    },
+
+    options: [modifierOptionSchema]
+  },
+  { _id: false }
+);
+
 const productSchema = new mongoose.Schema(
   {
     /* =========================
        DATOS PRINCIPALES
     ========================= */
+
     title: {
       type: String,
       required: true,
@@ -18,12 +75,14 @@ const productSchema = new mongoose.Schema(
 
     category: {
       type: String,
-      required: true
+      required: true,
+      trim: true
     },
 
     /* =========================
        PRECIOS
     ========================= */
+
     price: {
       type: Number,
       required: true,
@@ -32,66 +91,44 @@ const productSchema = new mongoose.Schema(
 
     cost: {
       type: Number,
-      default: 0
+      default: 0,
+      min: 0
     },
 
     /* =========================
        IMAGEN
     ========================= */
+
     image: {
       type: String,
       default: ""
     },
 
     /* =========================
-       STOCK (solo bebidas)
+       STOCK
     ========================= */
-    stock: {
-      type: Number,
-      default: 0
-    },
 
     useStock: {
       type: Boolean,
-      default: false // solo bebidas true
+      default: false
+    },
+
+    stock: {
+      type: Number,
+      default: 0,
+      min: 0
     },
 
     /* =========================
-       MODIFICADORES (GUARNICIONES, EXTRAS, ETC)
+       MODIFICADORES
     ========================= */
-    modifiers: [
-      {
-        name: {
-          type: String, // "Guarnición"
-          required: true
-        },
 
-        type: {
-          type: String,
-          enum: ["single", "multiple"],
-          default: "single"
-        },
-
-        required: {
-          type: Boolean,
-          default: false
-        },
-
-        options: [
-          {
-            label: String,  // "Puré"
-            price: {
-              type: Number,
-              default: 0
-            }
-          }
-        ]
-      }
-    ],
+    modifiers: [modifierSchema],
 
     /* =========================
        CONFIGURACIÓN
     ========================= */
+
     active: {
       type: Boolean,
       default: true
