@@ -1,0 +1,188 @@
+.checkout-page{
+min-height:100vh;
+background:#f8fafc;
+padding:30px;
+}
+
+.checkout-page h1{
+text-align:center;
+font-size:32px;
+color:#1f2937;
+margin-bottom:30px;
+font-weight:800;
+}
+
+
+.checkout-container{
+max-width:1100px;
+margin:auto;
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:25px;
+}
+
+
+/* FORMULARIO */
+
+.checkout-form,
+.checkout-summary{
+background:white;
+border-radius:22px;
+padding:25px;
+box-shadow:0 8px 25px rgba(0,0,0,.08);
+}
+
+
+.checkout-form h2,
+.checkout-summary h2{
+margin:0 0 18px;
+font-size:22px;
+color:#111827;
+}
+
+
+.checkout-form input,
+.checkout-form select{
+width:100%;
+padding:14px;
+margin-bottom:15px;
+border:1px solid #d1d5db;
+border-radius:12px;
+font-size:16px;
+outline:none;
+transition:.2s;
+}
+
+
+.checkout-form input:focus,
+.checkout-form select:focus{
+border-color:#f97316;
+box-shadow:0 0 0 3px rgba(249,115,22,.15);
+}
+
+
+
+/* BOTON */
+
+.checkout-btn{
+width:100%;
+background:#16a34a;
+color:white;
+border:none;
+padding:16px;
+border-radius:14px;
+font-size:17px;
+font-weight:700;
+cursor:pointer;
+margin-top:15px;
+transition:.25s;
+}
+
+
+.checkout-btn:hover{
+background:#15803d;
+transform:translateY(-2px);
+}
+
+
+
+/* RESUMEN */
+
+.checkout-summary{
+height:max-content;
+}
+
+
+.summary-item{
+display:flex;
+justify-content:space-between;
+gap:15px;
+padding:15px 0;
+border-bottom:1px solid #e5e7eb;
+}
+
+
+.summary-item strong{
+font-size:17px;
+color:#111827;
+}
+
+
+.summary-item p{
+margin:6px 0;
+color:#ea580c;
+font-size:14px;
+font-weight:600;
+}
+
+
+.summary-item span{
+font-weight:700;
+color:#16a34a;
+white-space:nowrap;
+}
+
+
+.checkout-summary hr{
+margin:20px 0;
+border:none;
+border-top:1px solid #e5e7eb;
+}
+
+
+.checkout-summary h3{
+font-size:28px;
+text-align:right;
+color:#111827;
+}
+
+
+
+
+/* TABLET */
+
+@media(max-width:850px){
+
+.checkout-container{
+grid-template-columns:1fr;
+}
+
+.checkout-summary{
+order:-1;
+}
+
+}
+
+
+
+/* CELULAR */
+
+@media(max-width:480px){
+
+.checkout-page{
+padding:15px;
+}
+
+
+.checkout-page h1{
+font-size:26px;
+}
+
+
+.checkout-form,
+.checkout-summary{
+padding:18px;
+border-radius:18px;
+}
+
+
+.summary-item{
+flex-direction:column;
+}
+
+
+.checkout-summary h3{
+font-size:24px;
+}
+
+}

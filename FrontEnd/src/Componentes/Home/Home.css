@@ -1,0 +1,158 @@
+/* =========================
+
+/* =========================
+   HERO SECTION
+=========================aaa */
+.hero {
+  height: 85vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  text-align: center;
+
+  color: rgb(247, 247, 247);
+
+  background: linear-gradient(
+      rgba(0, 0, 0, 0.66),
+      rgba(0, 0, 0, 0.65)
+    ),
+    url("https://cdn.eldestapeweb.com/eldestape/062025/1749588878413.jpg?cw=1280&ch=720");
+
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+
+  padding: 20px;
+}
+
+.hero-content {
+  max-width: 700px;
+
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+.hero-content h1 {
+  font-size: 3rem;
+  font-weight: 800;
+
+  margin-bottom: 15px;
+
+  color: red;
+  text-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+}
+
+.hero-content p {
+  font-size: 1.2rem;
+  margin-bottom: 25px;
+  color: #f1f1f1;
+}
+
+/* BOTÓN */
+.hero-content button {
+  padding: 12px 25px;
+
+  border: none;
+  border-radius: 12px;
+
+  cursor: pointer;
+
+  background: linear-gradient(135deg, #fa0101, #b60404);
+  color: #111;
+
+  font-weight: bold;
+  font-size: 1rem;
+
+  transition: all 0.3s ease;
+
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.hero-content button:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* =========================
+   CATEGORÍAS
+========================= */
+.categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+
+  gap: 20px;
+
+  padding: 50px 30px;
+
+  background: #0f0f0f;
+}
+
+/* CARD */
+.category-card {
+  background: rgba(255, 255, 255, 0.05);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  padding: 30px 20px;
+
+  border-radius: 18px;
+
+  color: white;
+
+  font-size: 1.2rem;
+  font-weight: 600;
+
+  text-align: center;
+
+  cursor: pointer;
+
+  transition: all 0.3s ease;
+
+  backdrop-filter: blur(10px);
+
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* HOVER CARD */
+.category-card:hover {
+  transform: translateY(-8px) scale(1.03);
+
+  background: rgba(255, 179, 71, 0.12);
+
+  border-color: red;
+
+  color: red;
+}
+
+/* =========================
+   ANIMACIONES
+========================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 768px) {
+  .hero-content h1 {
+    font-size: 2.2rem;
+  }
+
+  .hero-content p {
+    font-size: 1rem;
+  }
+
+  .categories {
+    padding: 30px 15px;
+  }
+}

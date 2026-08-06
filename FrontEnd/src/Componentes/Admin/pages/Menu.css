@@ -1,0 +1,395 @@
+.menu-container{
+min-height:100vh;
+background:#f8fafc;
+padding:25px;
+font-family:"Segoe UI",Arial,sans-serif;
+}
+
+.menu-container h1{
+text-align:center;
+font-size:32px;
+color:#1f2937;
+margin-bottom:30px;
+}
+
+
+/* FORMULARIO */
+
+.product-form{
+max-width:650px;
+margin:0 auto 40px;
+background:white;
+padding:25px;
+border-radius:20px;
+box-shadow:0 10px 30px rgba(0,0,0,.08);
+display:flex;
+flex-direction:column;
+gap:15px;
+}
+
+.product-form h2{
+margin:0;
+color:#111827;
+}
+
+
+input,
+select{
+width:100%;
+padding:13px;
+border-radius:12px;
+border:1px solid #d1d5db;
+font-size:15px;
+background:white;
+transition:.2s;
+box-sizing:border-box;
+}
+
+
+input:focus,
+select:focus{
+outline:none;
+border-color:#f97316;
+box-shadow:0 0 0 3px rgba(249,115,22,.15);
+}
+
+
+button{
+border:none;
+cursor:pointer;
+border-radius:12px;
+padding:12px 18px;
+font-size:15px;
+font-weight:600;
+transition:.25s;
+}
+
+
+.product-form button{
+background:#f97316;
+color:white;
+}
+
+
+.product-form button:hover{
+background:#ea580c;
+transform:translateY(-2px);
+}
+
+
+
+/* PRODUCTOS */
+
+.products-grid{
+display:grid;
+grid-template-columns:
+repeat(auto-fill,minmax(270px,1fr));
+gap:25px;
+}
+
+
+.product-card{
+background:white;
+border-radius:20px;
+padding:18px;
+box-shadow:0 8px 25px rgba(0,0,0,.08);
+display:flex;
+flex-direction:column;
+gap:12px;
+transition:.25s;
+}
+
+
+.product-card:hover{
+transform:translateY(-5px);
+box-shadow:0 15px 35px rgba(0,0,0,.12);
+}
+
+
+.product-card img{
+width:100%;
+height:190px;
+object-fit:cover;
+border-radius:15px;
+}
+
+
+.product-card h3{
+margin:0;
+font-size:22px;
+color:#111827;
+}
+
+
+.product-card p{
+margin:0;
+color:#64748b;
+line-height:1.4;
+}
+
+
+.product-card strong{
+font-size:24px;
+color:#16a34a;
+}
+
+
+
+.current-options{
+background:#dcfce7;
+color:#166534;
+padding:8px 12px;
+border-radius:10px;
+font-size:14px;
+font-weight:600;
+}
+
+
+
+/* BOTONES */
+
+.modifier-btn{
+background:#2563eb;
+color:white;
+}
+
+
+.modifier-btn:hover{
+background:#1d4ed8;
+}
+
+
+.delete-btn{
+background:#ef4444;
+color:white;
+}
+
+
+.delete-btn:hover{
+background:#dc2626;
+}
+
+
+
+/* MODAL */
+
+.modal-overlay{
+position:fixed;
+inset:0;
+background:rgba(15,23,42,.7);
+display:flex;
+align-items:center;
+justify-content:center;
+padding:20px;
+z-index:999;
+}
+
+
+.modal-box{
+position:relative;
+background:white;
+width:100%;
+max-width:520px;
+max-height:90vh;
+overflow-y:auto;
+padding:30px;
+border-radius:25px;
+display:flex;
+flex-direction:column;
+gap:15px;
+animation:modal .25s ease;
+}
+
+
+@keyframes modal{
+
+from{
+opacity:0;
+transform:scale(.9);
+}
+
+to{
+opacity:1;
+transform:scale(1);
+}
+
+}
+
+
+.close{
+position:absolute;
+right:15px;
+top:15px;
+width:35px;
+height:35px;
+padding:0;
+background:#ef4444;
+color:white;
+}
+
+
+
+.modal-box h2{
+margin:0;
+color:#111827;
+}
+
+
+.modal-box h3{
+margin:0;
+color:#475569;
+}
+
+
+.modal-box label{
+display:flex;
+align-items:center;
+gap:10px;
+font-size:15px;
+}
+
+
+
+.modal-box label input{
+width:auto;
+}
+
+
+
+.add-option{
+display:flex;
+gap:10px;
+}
+
+
+.add-option input{
+flex:1;
+}
+
+
+.add-option button{
+background:#2563eb;
+color:white;
+white-space:nowrap;
+}
+
+
+
+.modal-box ul{
+list-style:none;
+padding:0;
+margin:5px 0;
+display:flex;
+flex-direction:column;
+gap:8px;
+}
+
+
+.modal-box li{
+background:#f1f5f9;
+padding:12px;
+border-radius:12px;
+font-weight:600;
+}
+
+
+
+.old-options{
+background:#ffffff;
+padding:15px;
+border-radius:15px;
+border:1px solid #e2e8f0;
+}
+
+
+.old-options h4{
+margin-top:0;
+}
+
+
+.old-options p{
+margin:5px 0;
+color:#475569;
+}
+
+
+
+.save-btn{
+background:#16a34a!important;
+color:white;
+}
+
+
+.save-btn:hover{
+background:#15803d!important;
+}
+
+
+
+/* TABLET */
+
+@media(max-width:768px){
+
+.menu-container{
+padding:15px;
+}
+
+
+.menu-container h1{
+font-size:26px;
+}
+
+
+.products-grid{
+grid-template-columns:repeat(2,1fr);
+}
+
+
+.modal-box{
+padding:25px;
+}
+
+}
+
+
+
+/* CELULAR */
+
+@media(max-width:480px){
+
+.products-grid{
+grid-template-columns:1fr;
+}
+
+
+.product-form{
+padding:18px;
+}
+
+
+.product-card img{
+height:220px;
+}
+
+
+.add-option{
+flex-direction:column;
+}
+
+
+.add-option button{
+width:100%;
+}
+
+
+.modal-box{
+padding:20px;
+border-radius:18px;
+}
+
+
+button{
+font-size:14px;
+}
+
+}

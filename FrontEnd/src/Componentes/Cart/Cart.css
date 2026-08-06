@@ -1,0 +1,262 @@
+.cart-page{
+min-height:100vh;
+background:#f8fafc;
+padding:30px;
+max-width:900px;
+margin:auto;
+}
+
+
+/* TITULO */
+
+.cart-page h2{
+font-size:32px;
+color:#1f2937;
+margin-bottom:25px;
+font-weight:800;
+}
+
+
+/* CARRITO VACIO */
+
+.cart-page>p{
+background:white;
+padding:30px;
+border-radius:20px;
+text-align:center;
+font-size:18px;
+color:#64748b;
+box-shadow:0 8px 25px rgba(0,0,0,.08);
+}
+
+
+
+/* ITEMS */
+
+.cart-items{
+display:flex;
+flex-direction:column;
+gap:15px;
+}
+
+
+
+/* ITEM */
+
+.cart-item{
+background:white;
+border-radius:18px;
+padding:20px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+box-shadow:0 8px 25px rgba(0,0,0,.08);
+border:1px solid #e5e7eb;
+transition:.2s;
+}
+
+
+.cart-item:hover{
+transform:translateY(-3px);
+box-shadow:0 12px 30px rgba(0,0,0,.12);
+}
+
+
+
+.cart-item h4{
+margin:0 0 8px;
+font-size:21px;
+color:#111827;
+}
+
+
+/* GUARNICIONES */
+
+.cart-options{
+margin-top:6px;
+background:#fff7ed;
+color:#c2410c;
+padding:8px 12px;
+border-radius:10px;
+font-size:14px;
+font-weight:600;
+width:max-content;
+max-width:100%;
+}
+
+
+
+.cart-item p{
+margin:12px 0 0;
+font-size:18px;
+font-weight:700;
+color:#16a34a;
+}
+
+
+
+/* BOTON ELIMINAR */
+
+.cart-item button{
+background:#fee2e2;
+border:none;
+width:42px;
+height:42px;
+border-radius:50%;
+font-size:18px;
+cursor:pointer;
+transition:.2s;
+}
+
+
+.cart-item button:hover{
+background:#fecaca;
+transform:scale(1.1);
+}
+
+
+
+
+/* RESUMEN */
+
+.cart-summary{
+margin-top:25px;
+background:white;
+padding:25px;
+border-radius:22px;
+box-shadow:0 8px 30px rgba(0,0,0,.1);
+display:flex;
+flex-direction:column;
+gap:15px;
+}
+
+
+
+.cart-summary h3{
+font-size:28px;
+margin:0;
+color:#111827;
+text-align:center;
+}
+
+
+
+/* BOTONES */
+
+.cart-summary button{
+border:none;
+padding:15px;
+border-radius:14px;
+font-size:16px;
+font-weight:700;
+cursor:pointer;
+transition:.25s;
+}
+
+
+
+.cart-summary button:first-of-type{
+background:#e5e7eb;
+color:#374151;
+}
+
+
+.cart-summary button:first-of-type:hover{
+background:#d1d5db;
+}
+
+
+
+.confirm-btn{
+background:#16a34a;
+color:white;
+}
+
+
+
+.confirm-btn:hover{
+background:#15803d;
+transform:translateY(-2px);
+}
+
+
+
+
+
+/* RESPONSIVE TABLET */
+
+@media(max-width:768px){
+
+.cart-page{
+padding:20px;
+}
+
+
+.cart-page h2{
+font-size:26px;
+}
+
+
+.cart-item{
+padding:15px;
+}
+
+
+.cart-item h4{
+font-size:18px;
+}
+
+
+.cart-summary h3{
+font-size:24px;
+}
+
+}
+
+
+
+
+/* CELULAR */
+
+@media(max-width:480px){
+
+.cart-page{
+padding:15px;
+}
+
+
+
+.cart-item{
+border-radius:15px;
+padding:15px;
+align-items:flex-start;
+}
+
+
+
+.cart-item button{
+width:36px;
+height:36px;
+font-size:15px;
+}
+
+
+
+.cart-options{
+font-size:13px;
+}
+
+
+
+.cart-summary{
+padding:18px;
+}
+
+
+
+.cart-summary button{
+font-size:15px;
+padding:13px;
+}
+
+}

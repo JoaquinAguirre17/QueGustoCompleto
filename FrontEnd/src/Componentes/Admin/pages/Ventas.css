@@ -1,0 +1,63 @@
+.ventas-page {
+  padding: 20px;
+  font-family: Arial;
+  background: #f1f5f9;
+  min-height: 100vh;
+}
+
+.ventas-page h1 {
+  margin-bottom: 20px;
+}
+
+/* GRID STATS */
+.ventas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+}
+
+/* CARD */
+.venta-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.venta-card p {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+/* COLORES */
+.total { border-left: 5px solid #3b82f6; }
+.pedidos { border-left: 5px solid #22c55e; }
+.promedio { border-left: 5px solid #f59e0b; }
+.efectivo { border-left: 5px solid #10b981; }
+.transferencia { border-left: 5px solid #6366f1; }
+
+/* LISTA */
+.ventas-list {
+  margin-top: 30px;
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+}
+
+.venta-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.venta-row span {
+  font-weight: bold;
+}
+
+.venta-row small {
+  display: block;
+  color: gray;
+  font-size: 12px;
+}
