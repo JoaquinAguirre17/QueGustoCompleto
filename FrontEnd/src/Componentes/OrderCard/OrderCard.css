@@ -1,0 +1,564 @@
+
+/* =====================================================
+   ORDER CARD
+===================================================== */
+
+.order-card {
+  width: 100%;
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border: 1px solid #e4e7eb;
+
+  border-radius: 18px;
+
+  padding: 22px;
+
+  color: #1f2937;
+
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.08);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  overflow: hidden;
+}
+
+
+/* =====================================================
+   HOVER
+===================================================== */
+
+.order-card:hover {
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+
+/* =====================================================
+   CABECERA
+===================================================== */
+
+.order-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-bottom: 18px;
+
+  padding-bottom: 15px;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+
+.order-header h3 {
+  margin: 0;
+
+  color: #111827;
+
+  font-size: 22px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.2px;
+}
+
+
+/* =====================================================
+   ESTADO
+===================================================== */
+
+.order-status {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 7px 13px;
+
+  border-radius: 999px;
+
+  background: #fff7ed;
+
+  border: 1px solid #fed7aa;
+
+  color: #c2410c;
+
+  font-size: 12px;
+
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+
+/* =====================================================
+   CLIENTE
+===================================================== */
+
+.order-customer {
+  margin-bottom: 20px;
+
+  padding: 14px 15px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 12px;
+}
+
+
+.order-customer p {
+  margin: 7px 0;
+
+  color: #64748b;
+
+  font-size: 14px;
+
+  line-height: 1.45;
+}
+
+
+.order-customer p:first-child {
+  margin-top: 0;
+
+  color: #334155;
+}
+
+
+.order-customer p:last-child {
+  margin-bottom: 0;
+}
+
+
+.order-customer strong {
+  color: #111827;
+
+  font-weight: 700;
+}
+
+
+/* =====================================================
+   PRODUCTOS
+===================================================== */
+
+.order-products {
+  margin-top: 5px;
+}
+
+
+.order-products h4 {
+  margin: 0 0 12px;
+
+  color: #111827;
+
+  font-size: 16px;
+
+  font-weight: 800;
+}
+
+
+/* =====================================================
+   PRODUCTO INDIVIDUAL
+===================================================== */
+
+.order-product {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 18px;
+
+  padding: 13px 0;
+
+  border-bottom: 1px solid #edf0f2;
+}
+
+
+.order-product:last-child {
+  border-bottom: none;
+}
+
+
+.order-product > div {
+  flex: 1;
+
+  min-width: 0;
+}
+
+
+.order-product > div > strong {
+  display: block;
+
+  color: #1f2937;
+
+  font-size: 14px;
+
+  font-weight: 700;
+
+  line-height: 1.5;
+}
+
+
+.order-product > strong {
+  flex-shrink: 0;
+
+  color: #ea580c;
+
+  font-size: 15px;
+
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+
+/* =====================================================
+   GUARNICIONES / MODIFICADORES
+===================================================== */
+
+.order-modifiers {
+  margin-top: 9px;
+
+  padding: 9px 11px;
+
+  background: #fffaf5;
+
+  border: 1px solid #ffedd5;
+
+  border-left: 3px solid #f97316;
+
+  border-radius: 7px;
+}
+
+
+.order-modifiers p {
+  margin: 4px 0;
+
+  color: #78716c;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+
+.order-modifiers p:first-child {
+  margin-top: 0;
+}
+
+
+.order-modifiers p:last-child {
+  margin-bottom: 0;
+}
+
+
+.order-modifiers b {
+  color: #44403c;
+
+  font-weight: 700;
+}
+
+
+.order-modifiers span {
+  color: #ea580c;
+
+  font-weight: 700;
+}
+
+
+/* =====================================================
+   TOTAL
+===================================================== */
+
+.order-total {
+  display: flex;
+
+  justify-content: flex-end;
+
+  align-items: center;
+
+  margin-top: 17px;
+
+  padding-top: 16px;
+
+  border-top: 2px solid #f1f5f9;
+}
+
+
+.order-total strong {
+  color: #111827;
+
+  font-size: 21px;
+
+  font-weight: 800;
+}
+
+
+/* =====================================================
+   MEDIO DE PAGO
+===================================================== */
+
+.order-payment {
+  margin-top: 12px;
+
+  padding: 10px 13px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 9px;
+}
+
+
+.order-payment p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+
+.order-payment strong {
+  color: #334155;
+
+  font-weight: 700;
+}
+
+
+/* =====================================================
+   ACCIONES
+===================================================== */
+
+.actions {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 9px;
+
+  margin-top: 20px;
+}
+
+
+.actions button {
+  min-height: 42px;
+
+  padding: 9px 12px;
+
+  border: 1px solid #d1d5db;
+
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  color: #374151;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+
+.actions button:hover {
+  background: #f3f4f6;
+
+  border-color: #9ca3af;
+
+  transform: translateY(-1px);
+}
+
+
+.actions button:active {
+  transform: scale(0.97);
+}
+
+
+/* =====================================================
+   BOTÓN ACEPTAR
+===================================================== */
+
+.actions button:nth-child(1) {
+  border-color: #bfdbfe;
+
+  background: #eff6ff;
+
+  color: #1d4ed8;
+}
+
+
+.actions button:nth-child(1):hover {
+  background: #dbeafe;
+
+  border-color: #93c5fd;
+}
+
+
+/* =====================================================
+   BOTÓN PREPARANDO
+===================================================== */
+
+.actions button:nth-child(2) {
+  border-color: #fed7aa;
+
+  background: #fff7ed;
+
+  color: #c2410c;
+}
+
+
+.actions button:nth-child(2):hover {
+  background: #ffedd5;
+
+  border-color: #fdba74;
+}
+
+
+/* =====================================================
+   BOTÓN LISTO
+===================================================== */
+
+.actions button:nth-child(3) {
+  border-color: #bbf7d0;
+
+  background: #f0fdf4;
+
+  color: #15803d;
+}
+
+
+.actions button:nth-child(3):hover {
+  background: #dcfce7;
+
+  border-color: #86efac;
+}
+
+
+/* =====================================================
+   BOTÓN EN CAMINO
+===================================================== */
+
+.actions button:nth-child(4) {
+  border-color: #c7d2fe;
+
+  background: #eef2ff;
+
+  color: #4338ca;
+}
+
+
+.actions button:nth-child(4):hover {
+  background: #e0e7ff;
+
+  border-color: #a5b4fc;
+}
+
+
+/* =====================================================
+   BOTÓN ENTREGADO
+===================================================== */
+
+.actions button:nth-child(5) {
+  border-color: #a7f3d0;
+
+  background: #ecfdf5;
+
+  color: #047857;
+}
+
+
+.actions button:nth-child(5):hover {
+  background: #d1fae5;
+
+  border-color: #6ee7b7;
+}
+
+
+/* =====================================================
+   CANCELAR
+===================================================== */
+
+.actions button.danger {
+  border-color: #fecdd3;
+
+  background: #fff1f2;
+
+  color: #be123c;
+}
+
+
+.actions button.danger:hover {
+  background: #ffe4e6;
+
+  border-color: #fda4af;
+
+  color: #9f1239;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 600px) {
+
+  .order-card {
+    padding: 17px;
+
+    border-radius: 15px;
+  }
+
+
+  .order-header h3 {
+    font-size: 19px;
+  }
+
+
+  .order-status {
+    padding: 6px 9px;
+
+    font-size: 11px;
+  }
+
+
+  .order-product {
+    gap: 10px;
+  }
+
+
+  .order-product > strong {
+    font-size: 14px;
+  }
+
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+}
+

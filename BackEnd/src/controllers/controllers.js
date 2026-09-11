@@ -659,45 +659,60 @@ export const createOrder = async (req, res) => {
 /*=================================================
   Actualizar estado pedido
  =================================================*/
-export const updateOrderStatus = async (
-    req, res) => {
-    try {
+export const updateOrderStatus = async (req, res) => {
 
-      const { status } = req.body;
+  try {
 
-      const order =
-        await Order.findByIdAndUpdate(
-          req.params.id,
-          { status },
-          {
-            new: true
-          }
-        );
+    const io = req.app.get("io");
 
-      if (!order) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Pedido no encontrado"
-        });
-      }
+    const { status } = req.body;
 
-      res.status(200).json({
-        success: true,
-        order
-      });
 
-    } catch (error) {
-
-      console.error(
-        "Error actualizando pedido:",
-        error
+    const order =
+      await Order.findByIdAndUpdate(
+        req.params.id,
+        { status },
+        {
+          new: true
+        }
       );
 
-      res.status(500).json({
+
+    if (!order) {
+
+      return res.status(404).json({
         success: false,
-        message:
-          "Error actualizando pedido"
+        message: "Pedido no encontrado"
       });
+
     }
-  };
+
+
+    io.emit(
+      "orderUpdated",
+      order
+    );
+
+
+    res.status(200).json({
+      success: true,
+      order
+    });
+
+
+  } catch (error) {
+
+    console.error(
+      "Error actualizando pedido:",
+      error
+    );
+
+
+    res.status(500).json({
+      success: false,
+      message: "Error actualizando pedido"
+    });
+
+  }
+
+};

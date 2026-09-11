@@ -68,6 +68,7 @@ router.get("/categories", getCategories);
  * Crear categoría
  */
 router.post("/categories", createCategory);
+
 /* ==================================================
    PEDIDOS
 ================================================== */
@@ -99,9 +100,11 @@ router.post(
 /**
  * Actualizar estado
  */
-router.put(
+router.patch(
   "/orders/:id/status",
   updateOrderStatus
 );
+
+
 
 export default router;

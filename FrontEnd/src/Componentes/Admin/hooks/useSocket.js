@@ -3,32 +3,131 @@ import { io } from "socket.io-client";
 
 const socket = io("http://localhost:3000");
 
+
 export const useSocket = () => {
+
   const [newOrder, setNewOrder] = useState(null);
+
   const [updatedOrder, setUpdatedOrder] = useState(null);
+
 
   useEffect(() => {
 
-    socket.on("newOrder", (data) => {
+
+    /* =====================================================
+       NUEVO PEDIDO
+    ===================================================== */
+
+    const handleNewOrder = (data) => {
+
+      console.log(
+        "🟢 Socket → Nuevo pedido:",
+        data
+      );
+
+
       setNewOrder(data);
 
-      // 🔊 sonido nuevo pedido
-      new Audio("/sounds/new.mp3").play();
-    });
 
-    socket.on("orderUpdated", (data) => {
+      /* 🔊 Sonido nuevo pedido */
+
+      const audio = new Audio(
+        "/sounds/new.mp3"
+      );
+
+
+      audio
+        .play()
+        .catch((error) => {
+
+          console.warn(
+            "🔇 No se pudo reproducir el sonido:",
+            error
+          );
+
+        });
+
+    };
+
+
+    /* =====================================================
+       PEDIDO ACTUALIZADO
+    ===================================================== */
+
+    const handleOrderUpdated = (data) => {
+
+      console.log(
+        "🔄 Socket → Pedido actualizado:",
+        data
+      );
+
+
       setUpdatedOrder(data);
 
-      // 🔊 sonido cambio estado
-      new Audio("/sounds/update.mp3").play();
-    });
+
+      /* 🔊 Sonido actualización */
+
+      const audio = new Audio(
+        "/sounds/update.mp3"
+      );
+
+
+      audio
+        .play()
+        .catch((error) => {
+
+          console.warn(
+            "🔇 No se pudo reproducir el sonido:",
+            error
+          );
+
+        });
+
+    };
+
+
+    /* =====================================================
+       EVENTOS SOCKET.IO
+    ===================================================== */
+
+    socket.on(
+      "newOrder",
+      handleNewOrder
+    );
+
+
+    socket.on(
+      "orderUpdated",
+      handleOrderUpdated
+    );
+
+
+    /* =====================================================
+       LIMPIAR EVENTOS
+    ===================================================== */
 
     return () => {
-      socket.off("newOrder");
-      socket.off("orderUpdated");
+
+      socket.off(
+        "newOrder",
+        handleNewOrder
+      );
+
+
+      socket.off(
+        "orderUpdated",
+        handleOrderUpdated
+      );
+
     };
 
   }, []);
 
-  return { newOrder, updatedOrder };
+
+  return {
+    newOrder,
+    updatedOrder
+  };
+
 };
+
