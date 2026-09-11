@@ -1,10 +1,15 @@
+
 import { useEffect, useState } from "react";
 import axios from "axios";
+
 import { useSocket } from "../hooks/useSocket";
 import OrderCard from "../../OrderCard/OrderCard";
+
 import "./Pedidos.css";
 
+
 const API_URL = "http://localhost:3000/api";
+
 
 const Pedidos = () => {
 
@@ -12,10 +17,210 @@ const Pedidos = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+
   const {
     newOrder,
     updatedOrder
   } = useSocket();
+
+
+  /* =====================================================
+     ESTADOS QUE NO QUEREMOS MOSTRAR
+     
+     Cuando un pedido pasa a alguno de estos estados,
+     desaparece de esta sección.
+  ===================================================== */
+
+  const hiddenStatuses = [
+    "Entregado",
+    "Cancelado"
+  ];
+
+
+  /* =====================================================
+     VERIFICAR SI EL PEDIDO DEBE MOSTRARSE
+  ===================================================== */
+
+  const isVisibleOrder = (order) => {
+
+    if (!order) {
+      return false;
+    }
+
+
+    return !hiddenStatuses.includes(
+      order.status
+    );
+
+  };
+
+
+  /* =====================================================
+     FORMATEAR TELÉFONO PARA WHATSAPP
+     
+     Ejemplo:
+
+     0351 1234567
+            ↓
+     5493511234567
+  ===================================================== */
+
+  const formatWhatsAppPhone = (phone) => {
+
+    if (!phone) {
+      return "";
+    }
+
+
+    let cleanPhone = String(phone)
+      .replace(/\D/g, "");
+
+
+    /*
+      Si empieza con 0:
+
+      03511234567
+      ↓
+      3511234567
+    */
+
+    if (cleanPhone.startsWith("0")) {
+
+      cleanPhone =
+        cleanPhone.substring(1);
+
+    }
+
+
+    /*
+      Si no tiene código de Argentina,
+      agregamos 54.
+    */
+
+    if (!cleanPhone.startsWith("54")) {
+
+      cleanPhone =
+        "54" + cleanPhone;
+
+    }
+
+
+    /*
+      WhatsApp Argentina utiliza 549
+      para números móviles.
+
+      Ejemplo:
+
+      543511234567
+      ↓
+      5493511234567
+    */
+
+    if (!cleanPhone.startsWith("549")) {
+
+      cleanPhone =
+        "549" +
+        cleanPhone.substring(2);
+
+    }
+
+
+    return cleanPhone;
+
+  };
+
+
+  /* =====================================================
+     AVISAR AL CLIENTE POR WHATSAPP
+  ===================================================== */
+
+  const notifyWhatsApp = (order) => {
+
+    /*
+      El teléfono está directamente
+      en order.customer.phone
+    */
+
+    const phone =
+      order?.customer?.phone;
+
+
+    if (!phone) {
+
+      alert(
+        "Este cliente no tiene un número de teléfono."
+      );
+
+      return;
+
+    }
+
+
+    const whatsappPhone =
+      formatWhatsAppPhone(phone);
+
+
+    if (!whatsappPhone) {
+
+      alert(
+        "El número de teléfono no es válido."
+      );
+
+      return;
+
+    }
+
+
+    /*
+      Nombre del cliente
+    */
+
+    const firstName =
+      order?.customer?.firstName ||
+      "cliente";
+
+
+    /*
+      Número de pedido
+    */
+
+    const orderNumber =
+      order?.orderNumber ||
+      "";
+
+
+    /*
+      Mensaje que se abrirá en WhatsApp.
+    */
+
+    const message =
+      `Hola ${firstName}! 👋\n\n` +
+      `Te avisamos desde Que Gusto que tu pedido ` +
+      `#${orderNumber} ya está listo para entregar. 🍽️\n\n` +
+      `¡Te esperamos! 😊`;
+
+
+    /*
+      Crear URL de WhatsApp
+    */
+
+    const whatsappUrl =
+      `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
+        message
+      )}`;
+
+
+    /*
+      Abrir WhatsApp
+    */
+
+    window.open(
+      whatsappUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
+
+  };
 
 
   /* =====================================================
@@ -31,15 +236,35 @@ const Pedidos = () => {
         setLoading(true);
         setError("");
 
+
         const res = await axios.get(
           `${API_URL}/orders`
         );
 
-        setOrders(
+
+        const fetchedOrders =
           Array.isArray(res.data)
             ? res.data
-            : []
+            : [];
+
+
+        /*
+          Filtrar pedidos entregados/cancelados.
+
+          De esta forma, si recargamos la página
+          tampoco vuelven a aparecer.
+        */
+
+        const visibleOrders =
+          fetchedOrders.filter(
+            isVisibleOrder
+          );
+
+
+        setOrders(
+          visibleOrders
         );
+
 
       } catch (error) {
 
@@ -48,9 +273,11 @@ const Pedidos = () => {
           error
         );
 
+
         setError(
           "No se pudieron cargar los pedidos"
         );
+
 
       } finally {
 
@@ -83,14 +310,34 @@ const Pedidos = () => {
     );
 
 
+    /*
+      Si por alguna razón llega un pedido
+      ya entregado o cancelado, no lo mostramos.
+    */
+
+    if (!isVisibleOrder(newOrder)) {
+
+      console.log(
+        "ℹ️ Nuevo pedido ignorado:",
+        newOrder.status
+      );
+
+      return;
+
+    }
+
+
     setOrders((prevOrders) => {
 
-      /* Evitar duplicados */
+      /*
+        Evitar pedidos duplicados.
+      */
 
-      const exists = prevOrders.some(
-        (order) =>
-          order._id === newOrder._id
-      );
+      const exists =
+        prevOrders.some(
+          (order) =>
+            order._id === newOrder._id
+        );
 
 
       if (exists) {
@@ -100,10 +347,16 @@ const Pedidos = () => {
           newOrder._id
         );
 
+
         return prevOrders;
 
       }
 
+
+      /*
+        Agregar el nuevo pedido
+        al principio de la lista.
+      */
 
       return [
         newOrder,
@@ -134,13 +387,41 @@ const Pedidos = () => {
 
     setOrders((prevOrders) => {
 
-      const exists = prevOrders.some(
-        (order) =>
-          order._id === updatedOrder._id
-      );
+      /* =================================================
+         SI PASÓ A ENTREGADO O CANCELADO
+         
+         LO ELIMINAMOS DE LA PANTALLA
+      ================================================= */
+
+      if (!isVisibleOrder(updatedOrder)) {
+
+        console.log(
+          "🗑️ Eliminando pedido:",
+          updatedOrder._id,
+          updatedOrder.status
+        );
 
 
-      /* Si existe, reemplazarlo */
+        return prevOrders.filter(
+          (order) =>
+            order._id !== updatedOrder._id
+        );
+
+      }
+
+
+      /* =================================================
+         SI SIGUE ACTIVO
+         
+         ACTUALIZAMOS LA TARJETA
+      ================================================= */
+
+      const exists =
+        prevOrders.some(
+          (order) =>
+            order._id === updatedOrder._id
+        );
+
 
       if (exists) {
 
@@ -154,7 +435,11 @@ const Pedidos = () => {
       }
 
 
-      /* Si no existe, agregarlo */
+      /* =================================================
+         SI NO EXISTÍA Y SIGUE ACTIVO
+         
+         LO AGREGAMOS
+      ================================================= */
 
       return [
         updatedOrder,
@@ -186,6 +471,10 @@ const Pedidos = () => {
       );
 
 
+      /*
+        Actualizamos el estado en el backend.
+      */
+
       await axios.patch(
         `${API_URL}/orders/${id}/status`,
         {
@@ -197,6 +486,27 @@ const Pedidos = () => {
       console.log(
         "✅ Estado actualizado correctamente"
       );
+
+
+      /*
+        Si el estado es Entregado o Cancelado,
+        lo eliminamos inmediatamente.
+
+        Esto no depende de esperar a Socket.IO.
+      */
+
+      if (
+        hiddenStatuses.includes(status)
+      ) {
+
+        setOrders((prevOrders) =>
+          prevOrders.filter(
+            (order) =>
+              order._id !== id
+          )
+        );
+
+      }
 
 
     } catch (error) {
@@ -260,8 +570,11 @@ const Pedidos = () => {
           {error}
         </p>
 
+
         <button
-          onClick={() => window.location.reload()}
+          onClick={() =>
+            window.location.reload()
+          }
         >
           Reintentar
         </button>
@@ -292,7 +605,7 @@ const Pedidos = () => {
           <div className="empty-orders">
 
             <p>
-              📭 No hay pedidos todavía.
+              📭 No hay pedidos pendientes.
             </p>
 
           </div>
@@ -304,11 +617,22 @@ const Pedidos = () => {
             {
               orders.map((order) => (
 
-                <OrderCard
+                <div
                   key={order._id}
-                  order={order}
-                  changeStatus={changeStatus}
-                />
+                  className="order-wrapper"
+                >
+
+                  {/* ======================================
+                      TARJETA DEL PEDIDO
+                  ====================================== */}
+
+                  <OrderCard
+                    order={order}
+                    changeStatus={changeStatus}
+                    notifyWhatsApp={notifyWhatsApp}
+                  />
+
+                </div>
 
               ))
             }

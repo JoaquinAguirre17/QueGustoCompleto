@@ -9,6 +9,7 @@ import Ventas from "./Componentes/Admin/pages/Ventas";
 import Navbar from './Componentes/Navbar/Navbar';
 import Products from './Componentes/Products/Products';
 import Checkout from './Componentes/Admin/pages/Checkout';
+import Inicio from './Componentes/Admin/pages/Inicio';
 
 const App = () => {
   return (
@@ -31,6 +32,7 @@ const App = () => {
           <Route path="/admin/pedidos" element={<Pedidos />} />
           <Route path="/admin/menu" element={<Menu />} />
           <Route path="/admin/ventas" element={<Ventas />} />
+           <Route path="/admin/inicio" element={<Inicio />} />
         </Route>
       </Routes>
     </Router>

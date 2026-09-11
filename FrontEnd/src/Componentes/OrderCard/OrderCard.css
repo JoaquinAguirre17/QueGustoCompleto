@@ -1,50 +1,61 @@
 
-/* =====================================================
-   ORDER CARD
-===================================================== */
+/* =========================================================
+   QUE GUSTO - ORDER CARD
+   Estilos exclusivos del componente OrderCard
+   Todas las clases utilizan el prefijo qg-order-
+========================================================= */
 
-.order-card {
+
+/* =========================================================
+   TARJETA PRINCIPAL
+========================================================= */
+
+.qg-order-card {
+
   width: 100%;
-  box-sizing: border-box;
+  max-width: 460px;
 
-  background: #ffffff;
+  background: #181c21;
 
-  border: 1px solid #e4e7eb;
+  border: 1px solid #2c3239;
 
   border-radius: 18px;
 
   padding: 22px;
 
-  color: #1f2937;
+  color: #f5f7fa;
 
   box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.08);
+    0 10px 30px rgba(0, 0, 0, 0.35);
 
   transition:
     transform 0.2s ease,
+    border-color 0.2s ease,
     box-shadow 0.2s ease;
 
   overflow: hidden;
+
 }
 
 
-/* =====================================================
-   HOVER
-===================================================== */
+.qg-order-card:hover {
 
-.order-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
+
+  border-color: #3b444d;
 
   box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.12);
+    0 14px 35px rgba(0, 0, 0, 0.45);
+
 }
 
 
-/* =====================================================
+/* =========================================================
    CABECERA
-===================================================== */
+========================================================= */
 
-.order-header {
+.qg-order-header {
+
   display: flex;
 
   align-items: center;
@@ -53,512 +64,886 @@
 
   gap: 15px;
 
+  padding-bottom: 17px;
+
   margin-bottom: 18px;
 
-  padding-bottom: 15px;
+  border-bottom: 1px solid #2b3138;
 
-  border-bottom: 1px solid #e5e7eb;
 }
 
 
-.order-header h3 {
+.qg-order-header-content {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+
+}
+
+
+.qg-order-label {
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 1.5px;
+
+  color: #8e99a5;
+
+}
+
+
+.qg-order-number {
+
   margin: 0;
 
-  color: #111827;
+  font-size: 25px;
 
-  font-size: 22px;
+  line-height: 1.1;
 
   font-weight: 800;
 
-  letter-spacing: 0.2px;
+  color: #ffffff;
+
 }
 
 
-/* =====================================================
+/* =========================================================
    ESTADO
-===================================================== */
+========================================================= */
 
-.order-status {
+.qg-order-status {
+
   display: inline-flex;
 
   align-items: center;
 
   justify-content: center;
 
-  padding: 7px 13px;
+  min-height: 32px;
+
+  padding: 7px 12px;
 
   border-radius: 999px;
-
-  background: #fff7ed;
-
-  border: 1px solid #fed7aa;
-
-  color: #c2410c;
 
   font-size: 12px;
 
   font-weight: 800;
 
   white-space: nowrap;
+
+  border: 1px solid transparent;
+
 }
 
 
-/* =====================================================
+/* PENDIENTE */
+
+.qg-order-status-pendiente {
+
+  color: #ffd27a;
+
+  background: rgba(245, 158, 11, 0.12);
+
+  border-color: rgba(245, 158, 11, 0.28);
+
+}
+
+
+/* LISTO */
+
+.qg-order-status-listo {
+
+  color: #73e6a0;
+
+  background: rgba(34, 197, 94, 0.12);
+
+  border-color: rgba(34, 197, 94, 0.28);
+
+}
+
+
+/* ENTREGADO */
+
+.qg-order-status-entregado {
+
+  color: #7dd3fc;
+
+  background: rgba(14, 165, 233, 0.12);
+
+  border-color: rgba(14, 165, 233, 0.28);
+
+}
+
+
+/* CANCELADO */
+
+.qg-order-status-cancelado {
+
+  color: #ff8d8d;
+
+  background: rgba(239, 68, 68, 0.12);
+
+  border-color: rgba(239, 68, 68, 0.28);
+
+}
+
+
+/* EN CAMINO - por compatibilidad */
+
+.qg-order-status-en-camino {
+
+  color: #c4b5fd;
+
+  background: rgba(139, 92, 246, 0.12);
+
+  border-color: rgba(139, 92, 246, 0.28);
+
+}
+
+
+/* =========================================================
    CLIENTE
-===================================================== */
+========================================================= */
 
-.order-customer {
-  margin-bottom: 20px;
+.qg-order-customer {
 
-  padding: 14px 15px;
+  display: flex;
 
-  background: #f8fafc;
+  flex-direction: column;
 
-  border: 1px solid #e5e7eb;
+  gap: 8px;
 
-  border-radius: 12px;
+  padding: 15px;
+
+  margin-bottom: 18px;
+
+  background: #20252b;
+
+  border: 1px solid #2c333b;
+
+  border-radius: 13px;
+
 }
 
 
-.order-customer p {
-  margin: 7px 0;
+.qg-order-customer p {
 
-  color: #64748b;
+  margin: 0;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 9px;
+
+  color: #d9dee4;
 
   font-size: 14px;
 
   line-height: 1.45;
+
 }
 
 
-.order-customer p:first-child {
-  margin-top: 0;
+.qg-order-customer-name {
 
-  color: #334155;
+  color: #ffffff !important;
+
+  font-size: 15px !important;
+
 }
 
 
-.order-customer p:last-child {
-  margin-bottom: 0;
+.qg-order-customer-data {
+
+  color: #b9c1ca !important;
+
 }
 
 
-.order-customer strong {
-  color: #111827;
+.qg-order-customer-icon {
 
-  font-weight: 700;
+  width: 21px;
+
+  min-width: 21px;
+
+  text-align: center;
+
+  font-size: 14px;
+
 }
 
 
-/* =====================================================
+/* =========================================================
    PRODUCTOS
-===================================================== */
+========================================================= */
 
-.order-products {
-  margin-top: 5px;
+.qg-order-products {
+
+  margin-bottom: 18px;
+
 }
 
 
-.order-products h4 {
+.qg-order-products-title {
+
   margin: 0 0 12px;
 
-  color: #111827;
+  color: #ffffff;
 
-  font-size: 16px;
+  font-size: 15px;
 
-  font-weight: 800;
+  font-weight: 750;
+
 }
 
 
-/* =====================================================
+/* =========================================================
    PRODUCTO INDIVIDUAL
-===================================================== */
+========================================================= */
 
-.order-product {
+.qg-order-product {
+
   display: flex;
 
   align-items: flex-start;
 
   justify-content: space-between;
 
-  gap: 18px;
+  gap: 15px;
 
   padding: 13px 0;
 
-  border-bottom: 1px solid #edf0f2;
+  border-bottom: 1px solid #292f36;
+
 }
 
 
-.order-product:last-child {
+.qg-order-product:first-of-type {
+
+  padding-top: 6px;
+
+}
+
+
+.qg-order-product:last-child {
+
   border-bottom: none;
+
+  padding-bottom: 5px;
+
 }
 
 
-.order-product > div {
+.qg-order-product-info {
+
   flex: 1;
 
   min-width: 0;
+
 }
 
 
-.order-product > div > strong {
-  display: block;
+.qg-order-product-title {
 
-  color: #1f2937;
+  color: #ffffff;
 
   font-size: 14px;
 
-  font-weight: 700;
+  line-height: 1.45;
 
-  line-height: 1.5;
 }
 
 
-.order-product > strong {
+.qg-order-product-title strong {
+
+  color: #ffffff;
+
+  font-weight: 700;
+
+}
+
+
+.qg-order-product-price {
+
   flex-shrink: 0;
 
-  color: #ea580c;
+  color: #ffffff;
 
-  font-size: 15px;
+  font-size: 14px;
 
   font-weight: 800;
 
-  white-space: nowrap;
 }
 
 
-/* =====================================================
-   GUARNICIONES / MODIFICADORES
-===================================================== */
+/* =========================================================
+   MODIFICADORES / GUARNICIONES
+========================================================= */
 
-.order-modifiers {
-  margin-top: 9px;
+.qg-order-modifiers {
 
-  padding: 9px 11px;
+  margin-top: 7px;
 
-  background: #fffaf5;
+  padding-left: 5px;
 
-  border: 1px solid #ffedd5;
-
-  border-left: 3px solid #f97316;
-
-  border-radius: 7px;
 }
 
 
-.order-modifiers p {
+.qg-order-modifier {
+
+  display: flex;
+
+  align-items: flex-start;
+
+  flex-wrap: wrap;
+
+  gap: 4px;
+
   margin: 4px 0;
 
-  color: #78716c;
+  color: #bfc6ce;
 
   font-size: 12px;
 
-  line-height: 1.5;
+  line-height: 1.4;
+
 }
 
 
-.order-modifiers p:first-child {
-  margin-top: 0;
-}
+.qg-order-modifier b {
 
-
-.order-modifiers p:last-child {
-  margin-bottom: 0;
-}
-
-
-.order-modifiers b {
-  color: #44403c;
+  color: #e5e9ed;
 
   font-weight: 700;
+
 }
 
 
-.order-modifiers span {
-  color: #ea580c;
+.qg-order-modifier-icon {
 
-  font-weight: 700;
+  margin-right: 1px;
+
 }
 
 
-/* =====================================================
+.qg-order-modifier-extra {
+
+  color: #f5b95c;
+
+  font-weight: 600;
+
+}
+
+
+/* =========================================================
    TOTAL
-===================================================== */
+========================================================= */
 
-.order-total {
+.qg-order-total {
+
   display: flex;
-
-  justify-content: flex-end;
 
   align-items: center;
 
-  margin-top: 17px;
+  justify-content: space-between;
 
-  padding-top: 16px;
+  gap: 15px;
 
-  border-top: 2px solid #f1f5f9;
+  margin-top: 5px;
+
+  padding: 16px 0;
+
+  border-top: 1px solid #30363d;
+
+  border-bottom: 1px solid #30363d;
+
 }
 
 
-.order-total strong {
-  color: #111827;
+.qg-order-total-label {
 
-  font-size: 21px;
+  color: #aeb7c1;
 
-  font-weight: 800;
+  font-size: 14px;
+
+  font-weight: 600;
+
 }
 
 
-/* =====================================================
-   MEDIO DE PAGO
-===================================================== */
+.qg-order-total-value {
 
-.order-payment {
-  margin-top: 12px;
+  color: #ffffff;
 
-  padding: 10px 13px;
+  font-size: 22px;
 
-  background: #f8fafc;
+  font-weight: 850;
 
-  border: 1px solid #e5e7eb;
-
-  border-radius: 9px;
 }
 
 
-.order-payment p {
-  margin: 0;
+/* =========================================================
+   FORMA DE PAGO
+========================================================= */
 
-  color: #64748b;
+.qg-order-payment {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 14px 0 5px;
+
+}
+
+
+.qg-order-payment-label {
+
+  color: #9da7b2;
 
   font-size: 13px;
+
+  font-weight: 600;
+
 }
 
 
-.order-payment strong {
-  color: #334155;
+.qg-order-payment-method {
+
+  color: #e9edf1;
+
+  font-size: 13px;
 
   font-weight: 700;
+
+  text-align: right;
+
 }
 
 
-/* =====================================================
-   ACCIONES
-===================================================== */
+/* =========================================================
+   CONTENEDOR DE ACCIONES
+========================================================= */
 
-.actions {
-  display: grid;
+.qg-order-actions {
 
-  grid-template-columns:
-    repeat(2, 1fr);
+  display: flex;
+
+  flex-direction: column;
 
   gap: 9px;
 
-  margin-top: 20px;
+  margin-top: 18px;
+
 }
 
 
-.actions button {
-  min-height: 42px;
+/* =========================================================
+   BOTONES BASE
+========================================================= */
 
-  padding: 9px 12px;
+.qg-order-button {
 
-  border: 1px solid #d1d5db;
+  width: 100%;
 
-  border-radius: 10px;
+  min-height: 44px;
 
-  background: #ffffff;
+  display: flex;
 
-  color: #374151;
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  padding: 11px 15px;
+
+  border: 1px solid transparent;
+
+  border-radius: 11px;
+
+  font-family: inherit;
 
   font-size: 13px;
 
-  font-weight: 700;
+  font-weight: 750;
 
   cursor: pointer;
 
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.15s ease;
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+
 }
 
 
-.actions button:hover {
-  background: #f3f4f6;
-
-  border-color: #9ca3af;
+.qg-order-button:hover {
 
   transform: translateY(-1px);
+
 }
 
 
-.actions button:active {
-  transform: scale(0.97);
+.qg-order-button:active {
+
+  transform: translateY(0);
+
 }
 
 
-/* =====================================================
-   BOTÓN ACEPTAR
-===================================================== */
+.qg-order-button:focus-visible {
 
-.actions button:nth-child(1) {
-  border-color: #bfdbfe;
+  outline: 2px solid #67e8f9;
 
-  background: #eff6ff;
+  outline-offset: 2px;
 
-  color: #1d4ed8;
 }
 
 
-.actions button:nth-child(1):hover {
-  background: #dbeafe;
+/* =========================================================
+   IMPRIMIR
+========================================================= */
 
-  border-color: #93c5fd;
+.qg-order-button-print {
+
+  color: #e7edf3;
+
+  background: #252b32;
+
+  border-color: #39414a;
+
 }
 
 
-/* =====================================================
-   BOTÓN PREPARANDO
-===================================================== */
+.qg-order-button-print:hover {
 
-.actions button:nth-child(2) {
-  border-color: #fed7aa;
+  background: #303740;
 
-  background: #fff7ed;
+  border-color: #4a5561;
 
-  color: #c2410c;
+  box-shadow:
+    0 5px 15px rgba(0, 0, 0, 0.25);
+
 }
 
 
-.actions button:nth-child(2):hover {
-  background: #ffedd5;
+/* =========================================================
+   MARCAR COMO LISTO
+========================================================= */
 
-  border-color: #fdba74;
+.qg-order-button-ready {
+
+  color: #ffffff;
+
+  background: #d97706;
+
+  border-color: #f59e0b;
+
 }
 
 
-/* =====================================================
-   BOTÓN LISTO
-===================================================== */
+.qg-order-button-ready:hover {
 
-.actions button:nth-child(3) {
-  border-color: #bbf7d0;
+  background: #ea8508;
 
-  background: #f0fdf4;
+  border-color: #fbbf24;
 
-  color: #15803d;
+  box-shadow:
+    0 5px 18px rgba(245, 158, 11, 0.2);
+
 }
 
 
-.actions button:nth-child(3):hover {
-  background: #dcfce7;
+/* =========================================================
+   WHATSAPP
+========================================================= */
 
-  border-color: #86efac;
+.qg-order-button-whatsapp {
+
+  color: #ffffff;
+
+  background: #168c4a;
+
+  border-color: #22c55e;
+
 }
 
 
-/* =====================================================
-   BOTÓN EN CAMINO
-===================================================== */
+.qg-order-button-whatsapp:hover {
 
-.actions button:nth-child(4) {
-  border-color: #c7d2fe;
+  background: #1aa052;
 
-  background: #eef2ff;
+  border-color: #4ade80;
 
-  color: #4338ca;
+  box-shadow:
+    0 5px 18px rgba(34, 197, 94, 0.22);
+
 }
 
 
-.actions button:nth-child(4):hover {
-  background: #e0e7ff;
+/* =========================================================
+   ENTREGADO
+========================================================= */
 
-  border-color: #a5b4fc;
+.qg-order-button-delivered {
+
+  color: #ffffff;
+
+  background: #2563eb;
+
+  border-color: #3b82f6;
+
 }
 
 
-/* =====================================================
-   BOTÓN ENTREGADO
-===================================================== */
+.qg-order-button-delivered:hover {
 
-.actions button:nth-child(5) {
-  border-color: #a7f3d0;
+  background: #2d6fe8;
 
-  background: #ecfdf5;
+  border-color: #60a5fa;
 
-  color: #047857;
+  box-shadow:
+    0 5px 18px rgba(59, 130, 246, 0.2);
+
 }
 
 
-.actions button:nth-child(5):hover {
-  background: #d1fae5;
-
-  border-color: #6ee7b7;
-}
-
-
-/* =====================================================
+/* =========================================================
    CANCELAR
-===================================================== */
+========================================================= */
 
-.actions button.danger {
-  border-color: #fecdd3;
+.qg-order-button-danger {
 
-  background: #fff1f2;
+  color: #ffb4b4;
 
-  color: #be123c;
+  background: rgba(127, 29, 29, 0.18);
+
+  border-color: rgba(239, 68, 68, 0.35);
+
 }
 
 
-.actions button.danger:hover {
-  background: #ffe4e6;
+.qg-order-button-danger:hover {
 
-  border-color: #fda4af;
+  color: #ffffff;
 
-  color: #9f1239;
+  background: #b91c1c;
+
+  border-color: #ef4444;
+
+  box-shadow:
+    0 5px 18px rgba(239, 68, 68, 0.18);
+
 }
 
 
-/* =====================================================
-   RESPONSIVE
-===================================================== */
+/* =========================================================
+   BOTÓN DESHABILITADO
+========================================================= */
 
-@media (max-width: 600px) {
+.qg-order-button:disabled {
 
-  .order-card {
-    padding: 17px;
+  opacity: 0.45;
 
-    border-radius: 15px;
+  cursor: not-allowed;
+
+  transform: none;
+
+  box-shadow: none;
+
+}
+
+
+.qg-order-button:disabled:hover {
+
+  transform: none;
+
+  background: inherit;
+
+}
+
+
+/* =========================================================
+   RESPONSIVE - TABLET
+========================================================= */
+
+@media (max-width: 768px) {
+
+  .qg-order-card {
+
+    max-width: 100%;
+
+    padding: 19px;
+
+    border-radius: 16px;
+
   }
 
 
-  .order-header h3 {
-    font-size: 19px;
+  .qg-order-number {
+
+    font-size: 23px;
+
   }
 
 
-  .order-status {
-    padding: 6px 9px;
+  .qg-order-status {
 
     font-size: 11px;
-  }
 
+    padding: 6px 10px;
 
-  .order-product {
-    gap: 10px;
-  }
-
-
-  .order-product > strong {
-    font-size: 14px;
-  }
-
-
-  .actions {
-    grid-template-columns: 1fr;
   }
 
 }
 
+
+/* =========================================================
+   RESPONSIVE - CELULAR
+========================================================= */
+
+@media (max-width: 480px) {
+
+  .qg-order-card {
+
+    padding: 16px;
+
+    border-radius: 14px;
+
+  }
+
+
+  .qg-order-header {
+
+    align-items: flex-start;
+
+  }
+
+
+  .qg-order-number {
+
+    font-size: 21px;
+
+  }
+
+
+  .qg-order-label {
+
+    font-size: 10px;
+
+  }
+
+
+  .qg-order-status {
+
+    min-height: 29px;
+
+    padding: 5px 9px;
+
+    font-size: 10px;
+
+  }
+
+
+  .qg-order-customer {
+
+    padding: 13px;
+
+  }
+
+
+  .qg-order-customer p {
+
+    font-size: 13px;
+
+  }
+
+
+  .qg-order-product-title {
+
+    font-size: 13px;
+
+  }
+
+
+  .qg-order-product-price {
+
+    font-size: 13px;
+
+  }
+
+
+  .qg-order-total-value {
+
+    font-size: 20px;
+
+  }
+
+
+  .qg-order-button {
+
+    min-height: 46px;
+
+    font-size: 13px;
+
+  }
+
+}
+
+
+/* =========================================================
+   CELULAR MUY PEQUEÑO
+========================================================= */
+
+@media (max-width: 360px) {
+
+  .qg-order-card {
+
+    padding: 13px;
+
+  }
+
+
+  .qg-order-header {
+
+    flex-direction: column;
+
+    gap: 10px;
+
+  }
+
+
+  .qg-order-status {
+
+    align-self: flex-start;
+
+  }
+
+
+  .qg-order-product {
+
+    gap: 8px;
+
+  }
+
+
+  .qg-order-total-value {
+
+    font-size: 18px;
+
+  }
+
+}
