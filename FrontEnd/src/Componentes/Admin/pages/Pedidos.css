@@ -1,141 +1,611 @@
-/* =========================
-   PÁGINA GENERAL
-========================= */
+
+/* =====================================================
+   QUE GUSTO — PANTALLA DE PEDIDOS
+   Estilos aislados para evitar conflictos con el resto
+   del panel administrativo.
+===================================================== */
+
 .pedidos-page {
+  --pedidos-bg: #f4f6f8;
+  --pedidos-card: #ffffff;
+  --pedidos-text: #20252b;
+  --pedidos-muted: #727b86;
+  --pedidos-border: #e4e8ed;
+  --pedidos-accent: #e76f32;
+  --pedidos-accent-dark: #c85420;
+  --pedidos-success: #23865b;
+
+  width: 100%;
+  min-height: 100%;
+  padding: 28px;
+  color: var(--pedidos-text);
+  background: var(--pedidos-bg);
+  box-sizing: border-box;
+}
+
+.pedidos-page *,
+.pedidos-page *::before,
+.pedidos-page *::after {
+  box-sizing: border-box;
+}
+
+/* =====================================================
+   ENCABEZADO
+===================================================== */
+
+.pedidos-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.pedidos-heading {
+  min-width: 0;
+}
+
+.pedidos-eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--pedidos-accent-dark);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+}
+
+.pedidos-heading h1,
+.pedidos-header h1 {
+  margin: 0;
+  color: var(--pedidos-text);
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.2;
+}
+
+.pedidos-heading p {
+  margin: 9px 0 0;
+  color: var(--pedidos-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.pedidos-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pedidos-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #ccebdc;
+  border-radius: 999px;
+  background: #effaf4;
+  color: #23744f;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pedidos-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #25a56a;
+  box-shadow: 0 0 0 4px rgba(37, 165, 106, 0.12);
+  animation: pedidos-pulse 1.8s infinite;
+}
+
+@keyframes pedidos-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(37, 165, 106, 0.12);
+  }
+
+  50% {
+    box-shadow: 0 0 0 7px rgba(37, 165, 106, 0.04);
+  }
+}
+
+.pedidos-refresh-button,
+.pedidos-retry-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--pedidos-border);
+  border-radius: 11px;
+  background: var(--pedidos-card);
+  color: var(--pedidos-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.pedidos-refresh-button {
+  font-size: 19px;
+}
+
+.pedidos-refresh-button span {
+  font-size: 13px;
+}
+
+.pedidos-refresh-button:hover,
+.pedidos-retry-button:hover {
+  border-color: #d4a18a;
+  background: #fff8f4;
+}
+
+.pedidos-refresh-button:active,
+.pedidos-retry-button:active {
+  transform: scale(0.98);
+}
+
+/* =====================================================
+   RESUMEN DE ESTADOS
+===================================================== */
+
+.pedidos-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.pedidos-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
   padding: 20px;
-  font-family: Arial, sans-serif;
-  background: #f1f5f9;
-  min-height: 100vh;
+  border: 1px solid var(--pedidos-border);
+  border-radius: 16px;
+  background: var(--pedidos-card);
+  box-shadow: 0 3px 12px rgba(25, 35, 45, 0.025);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.pedidos-page h1 {
+.pedidos-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 20px rgba(25, 35, 45, 0.06);
+}
+
+.pedidos-summary-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: #fff0e8;
+  color: var(--pedidos-accent-dark);
+  font-size: 23px;
+}
+
+.pedidos-summary-card:nth-child(2) .pedidos-summary-icon {
+  background: #fff5dc;
+  color: #9a6b08;
+}
+
+.pedidos-summary-card:nth-child(3) .pedidos-summary-icon {
+  background: #e9efff;
+  color: #4568bd;
+}
+
+.pedidos-summary-card:nth-child(4) .pedidos-summary-icon {
+  background: #e5f7ee;
+  color: var(--pedidos-success);
+}
+
+.pedidos-summary-card > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 5px;
+}
+
+.pedidos-summary-label {
+  color: var(--pedidos-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.pedidos-summary-card strong {
+  color: var(--pedidos-text);
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* =====================================================
+   CONTENIDO DE PEDIDOS
+===================================================== */
+
+.pedidos-content {
+  min-width: 0;
+}
+
+.pedidos-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 20px;
-  font-size: 26px;
-  color: #0f172a;
 }
 
-/* =========================
-   GRID DE PEDIDOS
-========================= */
+.pedidos-section-heading h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+.pedidos-section-heading p {
+  margin: 7px 0 0;
+  color: var(--pedidos-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pedidos-count {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border: 1px solid var(--pedidos-border);
+  border-radius: 999px;
+  background: #fff;
+  color: #535d67;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* =====================================================
+   GRILLA
+===================================================== */
+
 .orders-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
+  gap: 20px;
 }
 
-/* =========================
-   CARD DE PEDIDO (OrderCard)
-========================= */
-.order-card {
-  background: white;
-  border-radius: 14px;
-  padding: 15px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-  border-left: 5px solid #3b82f6;
-  transition: transform 0.2s ease;
+.order-wrapper {
+  position: relative;
+  min-width: 0;
+  border-radius: 15px;
 }
 
-.order-card:hover {
-  transform: translateY(-3px);
+/* Permite visualizar los pedidos sin desbordar la pantalla. */
+.order-wrapper > * {
+  max-width: 100%;
 }
 
-/* =========================
-   HEADER DEL PEDIDO
-========================= */
-.order-card h3 {
+/* =====================================================
+   ACTUALIZACIÓN
+===================================================== */
+
+.order-updating-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--pedidos-text);
+  font-size: 13px;
+  font-weight: 700;
+  backdrop-filter: blur(2px);
+}
+
+/* =====================================================
+   ESTADOS DE CARGA
+===================================================== */
+
+.pedidos-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-height: 360px;
+  padding: 32px;
+  text-align: center;
+}
+
+.pedidos-loading h2 {
+  margin: 18px 0 7px;
+  font-size: 21px;
+}
+
+.pedidos-loading p {
   margin: 0;
-  font-size: 18px;
-  color: #111827;
-}
-
-.order-card p {
-  margin: 5px 0;
-  color: #374151;
+  color: var(--pedidos-muted);
   font-size: 14px;
 }
 
-/* =========================
-   ESTADO VISUAL
-========================= */
-.status {
+.pedidos-spinner {
   display: inline-block;
-  margin-top: 5px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: bold;
-  color: white;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e8d9d1;
+  border-top-color: var(--pedidos-accent);
+  border-radius: 50%;
+  animation: pedidos-spin 0.75s linear infinite;
 }
 
-/* Estados */
-.status.preparando {
-  background: #f97316; /* naranja */
+@keyframes pedidos-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.status.listo {
-  background: #22c55e; /* verde */
-}
+/* =====================================================
+   ESTADO VACÍO Y ERROR
+===================================================== */
 
-.status.entregado {
-  background: #3b82f6; /* azul */
-}
-
-.status.cancelado {
-  background: #ef4444; /* rojo */
-}
-
-/* =========================
-   BOTONES DE ACCIÓN
-========================= */
-.actions {
+.pedidos-empty,
+.pedidos-feedback {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-height: 300px;
+  padding: 35px 24px;
+  border: 1px dashed #d7dde4;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.7);
+  text-align: center;
 }
 
-.actions button {
-  flex: 1;
-  padding: 6px 8px;
-  border: none;
-  border-radius: 8px;
-  font-size: 12px;
-  cursor: pointer;
-  background: #e5e7eb;
-  transition: 0.2s ease;
+.pedidos-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 66px;
+  margin-bottom: 16px;
+  border-radius: 20px;
+  background: #fff0e8;
+  color: var(--pedidos-accent-dark);
+  font-size: 32px;
 }
 
-.actions button:hover {
-  background: #cbd5e1;
+.pedidos-empty h2,
+.pedidos-feedback h2 {
+  margin: 0;
+  color: var(--pedidos-text);
+  font-size: 19px;
+  font-weight: 800;
 }
 
-/* Botón peligro */
-.actions .danger {
-  background: #ef4444;
-  color: white;
+.pedidos-empty p,
+.pedidos-feedback p {
+  max-width: 430px;
+  margin: 10px 0 0;
+  color: var(--pedidos-muted);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
-.actions .danger:hover {
-  background: #dc2626;
+.pedidos-feedback-error {
+  border-color: #f0d3d3;
+  background: #fffafa;
 }
 
-/* =========================
-   EFECTO NUEVO PEDIDO
-========================= */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+.pedidos-feedback-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 15px;
+  border-radius: 50%;
+  background: #ffe9e9;
+  color: #b93232;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.pedidos-retry-button {
+  margin-top: 20px;
+  border-color: var(--pedidos-accent);
+  background: var(--pedidos-accent);
+  color: #fff;
+}
+
+.pedidos-retry-button:hover {
+  border-color: var(--pedidos-accent-dark);
+  background: var(--pedidos-accent-dark);
+  color: #fff;
+}
+
+/* =====================================================
+   ACCESIBILIDAD
+===================================================== */
+
+.pedidos-page button:focus-visible {
+  outline: 3px solid rgba(231, 111, 50, 0.35);
+  outline-offset: 3px;
+}
+
+/* =====================================================
+   TABLETS
+===================================================== */
+
+@media (max-width: 1200px) {
+  .pedidos-page {
+    padding: 22px;
   }
-  70% {
-    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+
+  .orders-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
   }
-  100% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+
+  .pedidos-summary {
+    gap: 12px;
+  }
+
+  .pedidos-summary-card {
+    padding: 16px;
+    gap: 11px;
+  }
+
+  .pedidos-summary-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
   }
 }
 
-.order-card.new {
-  animation: pulse 1.5s infinite;
-  border-left: 5px solid #22c55e;
+/* =====================================================
+   CELULARES
+===================================================== */
+
+@media (max-width: 700px) {
+  .pedidos-page {
+    padding: 17px 13px 28px;
+  }
+
+  .pedidos-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+
+  .pedidos-heading h1 {
+    font-size: 27px;
+  }
+
+  .pedidos-heading p {
+    max-width: 100%;
+    font-size: 13px;
+  }
+
+  .pedidos-header-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .pedidos-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+
+  .pedidos-summary-card {
+    padding: 14px 12px;
+    border-radius: 13px;
+  }
+
+  .pedidos-summary-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 18px;
+  }
+
+  .pedidos-summary-label {
+    font-size: 11px;
+  }
+
+  .pedidos-summary-card strong {
+    font-size: 23px;
+  }
+
+  .pedidos-section-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .pedidos-section-heading h2 {
+    font-size: 19px;
+  }
+
+  .pedidos-section-heading p {
+    font-size: 12px;
+  }
+
+  .orders-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 15px;
+  }
+
+  .pedidos-empty,
+  .pedidos-feedback {
+    min-height: 260px;
+    padding: 28px 17px;
+  }
+}
+
+/* =====================================================
+   CELULARES PEQUEÑOS
+===================================================== */
+
+@media (max-width: 380px) {
+  .pedidos-page {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .pedidos-live-indicator {
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .pedidos-refresh-button {
+    padding: 0 10px;
+  }
+
+  .pedidos-summary-card {
+    gap: 8px;
+    padding: 12px 9px;
+  }
+
+  .pedidos-summary-icon {
+    width: 31px;
+    height: 31px;
+    font-size: 16px;
+  }
+
+  .pedidos-summary-card strong {
+    font-size: 21px;
+  }
+}
+
+/* =====================================================
+   REDUCIR ANIMACIONES SI EL USUARIO LO PREFIERE
+===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .pedidos-page *,
+  .pedidos-page *::before,
+  .pedidos-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -30,62 +30,56 @@ const OrderCard = ({
      especialmente preparada para impresora térmica.
   ===================================================== */
 
-  const printOrder = () => {
 
-    const customerName =
-      `${order.customer?.firstName || ""} ${order.customer?.lastName || ""}`.trim();
+const printOrder = (order) => {
+  if (!order) return;
 
+  const customerName =
+    `${order.customer?.firstName || ""} ${order.customer?.lastName || ""}`.trim();
 
-    /* ===================================================
-       PRODUCTOS DE LA COMANDA
-    =================================================== */
+  /* =====================================================
+     PRODUCTOS
+  ===================================================== */
 
-    const itemsHTML =
-      order.items?.map((item) => {
-
+  const itemsHTML =
+    order.items
+      ?.map((item) => {
         const modifiersHTML =
           item.modifiers?.length > 0
             ? `
-              <div class="qg-print-modifiers">
-
-                ${
-                  item.modifiers
-                    .map(
-                      (modifier) => `
-                        <div class="qg-print-modifier">
-
-                          • ${modifier.group}:
-                          ${modifier.option}
-
-                          ${
-                            modifier.extraPrice > 0
-                              ? ` (+$${modifier.extraPrice})`
-                              : ""
-                          }
-
-                        </div>
-                      `
-                    )
-                    .join("")
-                }
-
+              <div class="print-modifiers">
+                ${item.modifiers
+                  .map(
+                    (modifier) => `
+                      <div class="print-modifier">
+                        • ${modifier.group}: ${modifier.option}
+                        ${
+                          modifier.extraPrice > 0
+                            ? ` (+$${modifier.extraPrice})`
+                            : ""
+                        }
+                      </div>
+                    `
+                  )
+                  .join("")}
               </div>
             `
             : "";
 
-
         return `
-          <div class="qg-print-item">
+          <div class="print-item">
 
-            <div class="qg-print-item-main">
+            <div class="print-item-main">
 
-              <strong>
-                ${item.quantity}x ${item.title}
-              </strong>
+              <div class="print-item-name">
+                <strong>
+                  ${item.quantity}x ${item.title}
+                </strong>
+              </div>
 
-              <strong>
+              <div class="print-item-price">
                 $${item.subtotal}
-              </strong>
+              </div>
 
             </div>
 
@@ -93,417 +87,336 @@ const OrderCard = ({
 
           </div>
         `;
+      })
+      .join("") || "";
 
-      }).join("");
+  /* =====================================================
+     CREAR VENTANA DE IMPRESIÓN
+  ===================================================== */
 
+  const printWindow = window.open(
+    "",
+    "_blank",
+    "width=400,height=700,left=100,top=100"
+  );
 
-    /* ===================================================
-       ABRIR VENTANA DE IMPRESIÓN
-    =================================================== */
+  if (!printWindow) {
+    alert(
+      "El navegador bloqueó la ventana de impresión. Permití las ventanas emergentes para este sitio."
+    );
+    return;
+  }
 
-    const printWindow =
-      window.open(
-        "",
-        "_blank",
-        "width=400,height=700"
-      );
+  /* =====================================================
+     HTML DE LA COMANDA
+  ===================================================== */
 
+  printWindow.document.open();
 
-    if (!printWindow) {
+  printWindow.document.write(`
+    <!DOCTYPE html>
 
-      alert(
-        "El navegador bloqueó la ventana de impresión. Permití las ventanas emergentes para este sitio."
-      );
+    <html>
 
-      return;
+      <head>
 
-    }
+        <meta charset="UTF-8">
 
+        <title>
+          Comanda ${order.orderNumber}
+        </title>
 
-    /* ===================================================
-       DOCUMENTO DE IMPRESIÓN
-    =================================================== */
+        <style>
 
-    printWindow.document.write(`
+          * {
+            box-sizing: border-box;
+          }
 
-      <!DOCTYPE html>
+          html,
+          body {
+            margin: 0;
+            padding: 0;
+            background: white;
+            color: black;
+          }
 
-      <html>
+          body {
+            width: 80mm;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+          }
 
-        <head>
+          .ticket {
+            width: 80mm;
+            padding: 5mm;
+            
+            /* ESPACIO EXTRA PARA LA CORTADORA */
+            padding-bottom: 30mm;
+          }
 
-          <meta charset="UTF-8" />
+          .header {
+            text-align: center;
+            margin-bottom: 10px;
+          }
 
-          <title>
-            Comanda #${order.orderNumber}
-          </title>
+          .business {
+            font-size: 22px;
+            font-weight: bold;
+          }
 
+          .order-number {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 5px;
+          }
 
-          <style>
+          .separator {
+            border-top: 2px dashed #000;
+            margin: 10px 0;
+          }
 
-            * {
-              box-sizing: border-box;
-            }
+          .info {
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 4px;
+          }
 
+          .info strong {
+            font-weight: bold;
+          }
 
+          .print-item {
+            margin-bottom: 10px;
+          }
+
+          .print-item-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+          }
+
+          .print-item-name {
+            flex: 1;
+            word-wrap: break-word;
+          }
+
+          .print-item-price {
+            white-space: nowrap;
+            font-weight: bold;
+          }
+
+          .print-modifiers {
+            padding-left: 10px;
+            margin-top: 4px;
+            font-size: 12px;
+          }
+
+          .print-modifier {
+            margin-bottom: 2px;
+          }
+
+          .total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: bold;
+          }
+
+          .payment {
+            margin-top: 8px;
+            font-size: 13px;
+          }
+
+          .footer {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 11px;
+          }
+
+          @media print {
+
+            html,
             body {
-
+              width: 80mm;
               margin: 0;
-
-              padding: 15px;
-
-              width: 100%;
-
-              font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
-
-              color: #000;
-
-              background: #fff;
-
-              font-size: 14px;
-
+              padding: 0;
             }
 
+            .ticket {
+              width: 80mm;
 
-            .qg-print-ticket {
+              padding-left: 3mm;
+              padding-right: 3mm;
+              padding-top: 3mm;
 
-              width: 100%;
-
-              max-width: 380px;
-
-              margin: 0 auto;
-
+              /* MUCHO ESPACIO ABAJO */
+              padding-bottom: 30mm;
             }
 
-
-            .qg-print-header {
-
-              text-align: center;
-
-              margin-bottom: 12px;
-
+            @page {
+              size: 80mm auto;
+              margin: 0;
             }
 
+          }
 
-            .qg-print-business {
+        </style>
 
-              font-size: 22px;
+      </head>
 
-              font-weight: bold;
 
-              margin-bottom: 6px;
+      <body>
 
-            }
+        <div class="ticket">
 
+          <!-- CABECERA -->
 
-            .qg-print-order-number {
+          <div class="header">
 
-              font-size: 20px;
-
-              font-weight: bold;
-
-            }
-
-
-            .qg-print-separator {
-
-              border-top: 2px dashed #000;
-
-              margin: 10px 0;
-
-            }
-
-
-            .qg-print-info {
-
-              margin-bottom: 8px;
-
-              line-height: 1.5;
-
-            }
-
-
-            .qg-print-info strong {
-
-              font-weight: bold;
-
-            }
-
-
-            .qg-print-item {
-
-              margin-bottom: 10px;
-
-            }
-
-
-            .qg-print-item-main {
-
-              display: flex;
-
-              justify-content: space-between;
-
-              gap: 10px;
-
-            }
-
-
-            .qg-print-item-main strong:first-child {
-
-              flex: 1;
-
-            }
-
-
-            .qg-print-modifiers {
-
-              margin-top: 4px;
-
-              padding-left: 12px;
-
-              font-size: 13px;
-
-            }
-
-
-            .qg-print-modifier {
-
-              margin-bottom: 2px;
-
-            }
-
-
-            .qg-print-total {
-
-              display: flex;
-
-              justify-content: space-between;
-
-              font-size: 18px;
-
-              font-weight: bold;
-
-              margin-top: 10px;
-
-            }
-
-
-            .qg-print-payment {
-
-              margin-top: 8px;
-
-            }
-
-
-            .qg-print-footer {
-
-              text-align: center;
-
-              margin-top: 20px;
-
-              font-size: 12px;
-
-            }
-
-
-            @media print {
-
-              body {
-
-                padding: 0;
-
-              }
-
-
-              .qg-print-ticket {
-
-                max-width: none;
-
-              }
-
-
-              @page {
-
-                margin: 5mm;
-
-              }
-
-            }
-
-          </style>
-
-        </head>
-
-
-        <body>
-
-          <div class="qg-print-ticket">
-
-
-            <!-- CABECERA -->
-
-            <div class="qg-print-header">
-
-              <div class="qg-print-business">
-                QUE GUSTO
-              </div>
-
-              <div class="qg-print-order-number">
-                PEDIDO #${order.orderNumber}
-              </div>
-
+            <div class="business">
+              QUE GUSTO
             </div>
 
-
-            <div class="qg-print-separator"></div>
-
-
-            <!-- CLIENTE -->
-
-            <div class="qg-print-info">
-
-              <strong>
-                Cliente:
-              </strong>
-
-              ${customerName || "Sin nombre"}
-
+            <div class="order-number">
+              PEDIDO #${order.orderNumber}
             </div>
-
-
-            ${
-              order.customer?.phone
-                ? `
-                  <div class="qg-print-info">
-
-                    <strong>
-                      Teléfono:
-                    </strong>
-
-                    ${order.customer.phone}
-
-                  </div>
-                `
-                : ""
-            }
-
-
-            ${
-              order.customer?.address
-                ? `
-                  <div class="qg-print-info">
-
-                    <strong>
-                      Dirección:
-                    </strong>
-
-                    ${order.customer.address}
-
-                  </div>
-                `
-                : ""
-            }
-
-
-            <div class="qg-print-info">
-
-              <strong>
-                Estado:
-              </strong>
-
-              ${order.status}
-
-            </div>
-
-
-            <div class="qg-print-separator"></div>
-
-
-            <!-- PRODUCTOS -->
-
-            <div>
-
-              ${itemsHTML}
-
-            </div>
-
-
-            <div class="qg-print-separator"></div>
-
-
-            <!-- TOTAL -->
-
-            <div class="qg-print-total">
-
-              <span>
-                TOTAL
-              </span>
-
-              <span>
-                $${order.total}
-              </span>
-
-            </div>
-
-
-            <!-- FORMA DE PAGO -->
-
-            <div class="qg-print-payment">
-
-              <strong>
-                Forma de pago:
-              </strong>
-
-              ${order.paymentMethod || "No especificado"}
-
-            </div>
-
-
-            <div class="qg-print-separator"></div>
-
-
-            <!-- FOOTER -->
-
-            <div class="qg-print-footer">
-
-              Gracias por elegir Que Gusto ❤️
-
-            </div>
-
 
           </div>
 
 
-          <script>
-
-            window.onload = function() {
-
-              window.print();
-
-            };
+          <div class="separator"></div>
 
 
-            window.onafterprint = function() {
+          <!-- CLIENTE -->
+
+          <div class="info">
+
+            <strong>Cliente:</strong>
+            ${customerName || "Sin nombre"}
+
+          </div>
+
+
+          ${
+            order.customer?.phone
+              ? `
+                <div class="info">
+                  <strong>Teléfono:</strong>
+                  ${order.customer.phone}
+                </div>
+              `
+              : ""
+          }
+
+
+          ${
+            order.customer?.address
+              ? `
+                <div class="info">
+                  <strong>Dirección:</strong>
+                  ${order.customer.address}
+                </div>
+              `
+              : ""
+          }
+
+
+          <div class="info">
+
+            <strong>Estado:</strong>
+            ${order.status || "pendiente"}
+
+          </div>
+
+
+          <div class="separator"></div>
+
+
+          <!-- PRODUCTOS -->
+
+          ${itemsHTML}
+
+
+          <div class="separator"></div>
+
+
+          <!-- TOTAL -->
+
+          <div class="total">
+
+            <span>
+              TOTAL
+            </span>
+
+            <span>
+              $${order.total}
+            </span>
+
+          </div>
+
+
+          <!-- PAGO -->
+
+          <div class="payment">
+
+            <strong>
+              Forma de pago:
+            </strong>
+
+            ${order.paymentMethod || "No especificado"}
+
+          </div>
+
+
+          <div class="separator"></div>
+
+
+          <!-- FOOTER -->
+
+          <div class="footer">
+
+            Gracias por elegir Que Gusto ❤️
+
+          </div>
+
+        </div>
+
+
+        <script>
+
+          setTimeout(() => {
+
+            window.focus();
+
+            window.print();
+
+          }, 500);
+
+
+          window.onafterprint = () => {
+
+            setTimeout(() => {
 
               window.close();
 
-            };
+            }, 300);
 
-          </script>
+          };
 
-        </body>
+        </script>
 
-      </html>
+      </body>
 
-    `);
+    </html>
+  `);
+
+  printWindow.document.close();
+
+  printWindow.focus();
+};
 
 
-    printWindow.document.close();
-
-  };
 
 
   /* =====================================================
