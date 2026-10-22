@@ -137,11 +137,26 @@ const productSchema = new mongoose.Schema(
     featured: {
       type: Boolean,
       default: false
+    },
+    /* =========================
+   DESTACADOS Y PROMOCIONES
+========================= */
+
+    isPromo: {
+      type: Boolean,
+      default: false
+    },
+
+    promoPrice: {
+      type: Number,
+      default: null,
+      min: 0
     }
   },
   {
     timestamps: true
   }
+
 );
 
 export default mongoose.model("Product", productSchema);
