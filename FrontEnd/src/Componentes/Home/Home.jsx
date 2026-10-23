@@ -250,10 +250,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CARRITO */}
-      <section className="qg-home__cart">
-        <Cart />
-      </section>
+    
 
       {/* PROMOCIONES */}
       <section className="qg-home__products-section qg-home__promotions">
