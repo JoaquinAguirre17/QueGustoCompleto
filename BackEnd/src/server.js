@@ -11,139 +11,84 @@ import router from "./routes/routes.js";
 dotenv.config();
 
 const app = express();
-
-
-/* =========================
-   SERVIDOR HTTP
-========================= */
-
 const server = http.createServer(app);
 
+// ==================================
+// CORS: FRONTEND LOCAL Y PRODUCCIÓN
+// ==================================
 
-/* =========================
-   SOCKET.IO
-========================= */
+const allowedOrigins = [
+  "http://localhost:5173",
+  ...(process.env.FRONTEND_URL || "")
+    .split(",")
+    .map(url => url.trim())
+    .filter(Boolean)
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Permitir solicitudes sin Origin (por ejemplo, herramientas de servidor)
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origen no permitido por CORS: ${origin}`));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  credentials: true
+};
+
+// ==================================
+// SOCKET.IO
+// ==================================
 
 const io = new Server(server, {
-
-  cors: {
-
-    origin: "http://localhost:5173",
-
-    methods: [
-      "GET",
-      "POST"
-    ],
-
-    credentials: true
-
-  }
-
+  cors: corsOptions
 });
-
-
-/* =========================
-   HACER IO DISPONIBLE
-   EN LOS CONTROLADORES
-========================= */
 
 app.set("io", io);
 
-
-/* =========================
-   SOCKET CONNECTION
-========================= */
-
 io.on("connection", (socket) => {
-
-  console.log(
-    "🟢 Cliente conectado a Socket.IO:",
-    socket.id
-  );
-
+  console.log("🟢 Cliente conectado a Socket.IO:", socket.id);
 
   socket.on("disconnect", () => {
-
-    console.log(
-      "🔴 Cliente desconectado:",
-      socket.id
-    );
-
+    console.log("🔴 Cliente desconectado:", socket.id);
   });
-
 });
 
+// ==================================
+// MIDDLEWARES
+// ==================================
 
-/* =========================
-   MIDDLEWARES
-========================= */
+app.use(cors(corsOptions));
+app.use(express.json());
 
-app.use(
+// ==================================
+// RUTAS
+// ==================================
 
-  cors({
+app.use("/api", router);
 
-    origin: "http://localhost:5173",
-
-    credentials: true
-
-  })
-
-);
-
-
-app.use(
-  express.json()
-);
-
-
-/* =========================
-   RUTAS
-========================= */
-
-app.use(
-  "/api",
-  router
-);
-
-
-/* =========================
-   START SERVER
-========================= */
+// ==================================
+// INICIAR SERVIDOR
+// ==================================
 
 const startServer = async () => {
-
   try {
-
     await connectDB();
 
+    const PORT = process.env.PORT || 3000;
 
-    server.listen(
-      3000,
-      () => {
-
-        console.log(
-          "🔥 Server running on port 3000"
-        );
-
-        console.log(
-          "⚡ Socket.IO funcionando"
-        );
-
-      }
-    );
-
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`🔥 Server running on port ${PORT}`);
+      console.log("⚡ Socket.IO funcionando");
+      console.log("🌐 Orígenes permitidos:", allowedOrigins);
+    });
 
   } catch (error) {
-
-    console.log(
-      "💥 Error iniciando server:",
-      error
-    );
-
+    console.error("💥 Error iniciando server:", error);
+    process.exit(1);
   }
-
 };
 
-
 startServer();
-
