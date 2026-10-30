@@ -23,92 +23,157 @@ const OrderCard = ({
   };
 
 
-  /* =====================================================
-     IMPRIMIR COMANDA
+ 
+/* =====================================================
+   IMPRIMIR COMANDA - QUE GUSTO
 
-     Generamos una ventana nueva con una comanda
-     especialmente preparada para impresora térmica.
-  ===================================================== */
-
+   Diseño profesional para impresoras térmicas de 80mm.
+   Incluye información del cliente, productos,
+   modificadores, entrega, pago y total.
+===================================================== */
 
 const printOrder = (order) => {
   if (!order) return;
 
-  const customerName =
-    `${order.customer?.firstName || ""} ${order.customer?.lastName || ""}`.trim();
-
   /* =====================================================
-     PRODUCTOS
+     UTILIDADES
   ===================================================== */
 
-  const itemsHTML =
-    order.items
-      ?.map((item) => {
-        const modifiersHTML =
-          item.modifiers?.length > 0
-            ? `
-              <div class="print-modifiers">
-                ${item.modifiers
-                  .map(
-                    (modifier) => `
-                      <div class="print-modifier">
-                        • ${modifier.group}: ${modifier.option}
-                        ${
-                          modifier.extraPrice > 0
-                            ? ` (+$${modifier.extraPrice})`
-                            : ""
-                        }
-                      </div>
-                    `
-                  )
-                  .join("")}
+  const escapeHTML = (value) => {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+
+  const money = (value) => {
+    return Number(value || 0).toLocaleString("es-AR", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  const formatDate = (date) => {
+    const parsedDate = date ? new Date(date) : new Date();
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "Fecha no disponible";
+    }
+
+    return parsedDate.toLocaleString("es-AR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+  };
+
+  const customerName =
+    `${order.customer?.firstName || ""} ${
+      order.customer?.lastName || ""
+    }`.trim() || "Sin nombre";
+
+  /* =====================================================
+     PRODUCTOS Y MODIFICADORES
+  ===================================================== */
+
+  const itemsHTML = (order.items || [])
+    .map((item) => {
+      const quantity = Number(item.quantity || 0);
+
+      const modifiersHTML = (item.modifiers || [])
+        .map((modifier) => {
+          const extra = Number(modifier.extraPrice || 0);
+
+          return `
+            <div class="modifier">
+              <span>
+                + ${escapeHTML(modifier.group || "Extra")}:
+                ${escapeHTML(modifier.option || "")}
+              </span>
+
+              ${
+                extra > 0
+                  ? `<strong>+$${money(extra)}</strong>`
+                  : ""
+              }
+            </div>
+          `;
+        })
+        .join("");
+
+      return `
+        <div class="product">
+
+          <div class="product-main">
+
+            <div class="quantity">
+              ${quantity}x
+            </div>
+
+            <div class="product-info">
+
+              <div class="product-name">
+                ${escapeHTML(item.title || "Producto")}
               </div>
-            `
-            : "";
 
-        return `
-          <div class="print-item">
-
-            <div class="print-item-main">
-
-              <div class="print-item-name">
-                <strong>
-                  ${item.quantity}x ${item.title}
-                </strong>
-              </div>
-
-              <div class="print-item-price">
-                $${item.subtotal}
-              </div>
+              ${
+                modifiersHTML
+                  ? `<div class="modifiers">${modifiersHTML}</div>`
+                  : ""
+              }
 
             </div>
 
-            ${modifiersHTML}
-
           </div>
-        `;
-      })
-      .join("") || "";
+
+          <div class="product-subtotal">
+            $${money(item.subtotal)}
+          </div>
+
+        </div>
+      `;
+    })
+    .join("");
 
   /* =====================================================
-     CREAR VENTANA DE IMPRESIÓN
+     INFORMACIÓN ADICIONAL
+  ===================================================== */
+
+  const deliveryType =
+    order.deliveryType === "retiro"
+      ? "Retiro en local"
+      : order.deliveryType === "delivery"
+      ? "Envío a domicilio"
+      : order.deliveryType || "No especificado";
+
+  const paymentMethod = escapeHTML(
+    order.paymentMethod || "No especificado"
+  );
+
+  const address = order.customer?.address;
+
+  const phone = order.customer?.phone;
+
+  /* =====================================================
+     VENTANA DE IMPRESIÓN
   ===================================================== */
 
   const printWindow = window.open(
     "",
     "_blank",
-    "width=400,height=700,left=100,top=100"
+    "width=400,height=700"
   );
 
   if (!printWindow) {
     alert(
-      "El navegador bloqueó la ventana de impresión. Permití las ventanas emergentes para este sitio."
+      "El navegador bloqueó la impresión. Permití las ventanas emergentes."
     );
     return;
   }
 
   /* =====================================================
-     HTML DE LA COMANDA
+     DOCUMENTO HTML
   ===================================================== */
 
   printWindow.document.open();
@@ -116,15 +181,15 @@ const printOrder = (order) => {
   printWindow.document.write(`
     <!DOCTYPE html>
 
-    <html>
+    <html lang="es">
 
       <head>
 
         <meta charset="UTF-8">
 
-        <title>
-          Comanda ${order.orderNumber}
-        </title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>Comanda #${escapeHTML(order.orderNumber)}</title>
 
         <style>
 
@@ -136,105 +201,209 @@ const printOrder = (order) => {
           body {
             margin: 0;
             padding: 0;
+            width: 80mm;
             background: white;
             color: black;
           }
 
           body {
-            width: 80mm;
             font-family: Arial, Helvetica, sans-serif;
             font-size: 13px;
+            font-weight: 500;
           }
 
           .ticket {
             width: 80mm;
-            padding: 5mm;
-            
-            /* ESPACIO EXTRA PARA LA CORTADORA */
-            padding-bottom: 30mm;
+            padding: 4mm 4mm 30mm;
           }
+
+          /* CABECERA */
 
           .header {
             text-align: center;
-            margin-bottom: 10px;
+            padding-bottom: 12px;
           }
 
           .business {
-            font-size: 22px;
-            font-weight: bold;
+            font-size: 27px;
+            font-weight: 900;
+            letter-spacing: 1px;
+          }
+
+          .business-subtitle {
+            font-size: 11px;
+            margin-top: 3px;
+            letter-spacing: 2px;
           }
 
           .order-number {
-            font-size: 18px;
-            font-weight: bold;
-            margin-top: 5px;
+            margin-top: 12px;
+            font-size: 23px;
+            font-weight: 900;
+            border: 2px solid black;
+            padding: 7px 3px;
           }
 
-          .separator {
-            border-top: 2px dashed #000;
-            margin: 10px 0;
-          }
-
-          .info {
-            font-size: 13px;
-            line-height: 1.5;
-            margin-bottom: 4px;
-          }
-
-          .info strong {
-            font-weight: bold;
-          }
-
-          .print-item {
-            margin-bottom: 10px;
-          }
-
-          .print-item-main {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 8px;
-          }
-
-          .print-item-name {
-            flex: 1;
-            word-wrap: break-word;
-          }
-
-          .print-item-price {
-            white-space: nowrap;
-            font-weight: bold;
-          }
-
-          .print-modifiers {
-            padding-left: 10px;
-            margin-top: 4px;
+          .order-date {
+            margin-top: 7px;
             font-size: 12px;
           }
 
-          .print-modifier {
-            margin-bottom: 2px;
+          /* SEPARADORES */
+
+          .separator {
+            border-top: 2px dashed black;
+            margin: 11px 0;
           }
+
+          .solid-separator {
+            border-top: 2px solid black;
+            margin: 10px 0;
+          }
+
+          /* SECCIONES */
+
+          .section-title {
+            font-size: 14px;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+          }
+
+          .info-row {
+            margin-bottom: 6px;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+          }
+
+          .info-row strong {
+            font-weight: 900;
+          }
+
+          /* ENTREGA */
+
+          .delivery {
+            border: 2px solid black;
+            padding: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 900;
+            margin: 10px 0;
+            text-transform: uppercase;
+          }
+
+          /* PRODUCTOS */
+
+          .products-title {
+            font-size: 17px;
+            font-weight: 900;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+          }
+
+          .product {
+            margin-bottom: 13px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+
+          .product-main {
+            display: flex;
+            align-items: flex-start;
+            gap: 7px;
+          }
+
+          .quantity {
+            font-size: 16px;
+            font-weight: 900;
+            min-width: 32px;
+          }
+
+          .product-info {
+            flex: 1;
+            min-width: 0;
+          }
+
+          .product-name {
+            font-size: 15px;
+            font-weight: 900;
+            line-height: 1.3;
+            overflow-wrap: anywhere;
+          }
+
+          .product-subtotal {
+            text-align: right;
+            font-size: 15px;
+            font-weight: 900;
+            margin-top: 4px;
+          }
+
+          /* MODIFICADORES */
+
+          .modifiers {
+            margin-top: 5px;
+            padding-left: 5px;
+            font-size: 12px;
+          }
+
+          .modifier {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+            margin-bottom: 4px;
+            line-height: 1.3;
+          }
+
+          .modifier strong {
+            white-space: nowrap;
+          }
+
+          /* TOTAL */
 
           .total {
             display: flex;
             justify-content: space-between;
-            font-size: 18px;
-            font-weight: bold;
+            align-items: center;
+            font-size: 21px;
+            font-weight: 900;
+            padding: 10px 0;
           }
 
+          /* PAGO */
+
           .payment {
-            margin-top: 8px;
             font-size: 13px;
+            line-height: 1.6;
           }
+
+          /* OBSERVACIONES */
+
+          .observations {
+            margin-top: 10px;
+            border: 1px dashed black;
+            padding: 8px;
+            font-size: 13px;
+            overflow-wrap: anywhere;
+          }
+
+          /* FOOTER */
 
           .footer {
             text-align: center;
-            margin-top: 15px;
-            font-size: 11px;
+            margin-top: 18px;
+            font-size: 12px;
+            line-height: 1.5;
+            font-weight: bold;
           }
 
+          /* IMPRESIÓN */
+
           @media print {
+
+            @page {
+              size: 80mm auto;
+              margin: 0;
+            }
 
             html,
             body {
@@ -245,18 +414,15 @@ const printOrder = (order) => {
 
             .ticket {
               width: 80mm;
-
-              padding-left: 3mm;
-              padding-right: 3mm;
-              padding-top: 3mm;
-
-              /* MUCHO ESPACIO ABAJO */
-              padding-bottom: 30mm;
+              padding: 3mm 3mm 30mm;
             }
 
-            @page {
-              size: 80mm auto;
-              margin: 0;
+            .product,
+            .header,
+            .delivery,
+            .total {
+              break-inside: avoid;
+              page-break-inside: avoid;
             }
 
           }
@@ -264,7 +430,6 @@ const printOrder = (order) => {
         </style>
 
       </head>
-
 
       <body>
 
@@ -275,132 +440,149 @@ const printOrder = (order) => {
           <div class="header">
 
             <div class="business">
-              QUE GUSTO
+              QUE GUSTO!!!
+            </div>
+
+            <div class="business-subtitle">
+              ROTISERÍA
             </div>
 
             <div class="order-number">
-              PEDIDO #${order.orderNumber}
+              PEDIDO #${escapeHTML(order.orderNumber || "---")}
+            </div>
+
+            <div class="order-date">
+              ${formatDate(order.createdAt || order.date)}
             </div>
 
           </div>
 
-
           <div class="separator"></div>
-
 
           <!-- CLIENTE -->
 
-          <div class="info">
-
-            <strong>Cliente:</strong>
-            ${customerName || "Sin nombre"}
-
+          <div class="section-title">
+            Datos del cliente
           </div>
 
+          <div class="info-row">
+            <strong>Nombre:</strong>
+            ${escapeHTML(customerName)}
+          </div>
 
           ${
-            order.customer?.phone
+            phone
               ? `
-                <div class="info">
+                <div class="info-row">
                   <strong>Teléfono:</strong>
-                  ${order.customer.phone}
+                  ${escapeHTML(phone)}
                 </div>
               `
               : ""
           }
-
 
           ${
-            order.customer?.address
+            address
               ? `
-                <div class="info">
+                <div class="info-row">
                   <strong>Dirección:</strong>
-                  ${order.customer.address}
+                  ${escapeHTML(address)}
                 </div>
               `
               : ""
           }
 
-
-          <div class="info">
-
-            <strong>Estado:</strong>
-            ${order.status || "pendiente"}
-
+          <div class="delivery">
+            ${escapeHTML(deliveryType)}
           </div>
-
 
           <div class="separator"></div>
-
 
           <!-- PRODUCTOS -->
 
-          ${itemsHTML}
+          <div class="products-title">
+            Detalle del pedido
+          </div>
 
+          ${itemsHTML || "<p>Sin productos</p>"}
 
           <div class="separator"></div>
-
 
           <!-- TOTAL -->
 
           <div class="total">
 
-            <span>
-              TOTAL
-            </span>
+            <span>TOTAL</span>
 
-            <span>
-              $${order.total}
-            </span>
+            <span>$${money(order.total)}</span>
 
           </div>
 
+          <div class="solid-separator"></div>
 
           <!-- PAGO -->
 
           <div class="payment">
 
-            <strong>
-              Forma de pago:
-            </strong>
+            <div>
+              <strong>Forma de pago:</strong>
+              ${paymentMethod}
+            </div>
 
-            ${order.paymentMethod || "No especificado"}
+            <div>
+              <strong>Estado:</strong>
+              ${escapeHTML(order.status || "Pendiente")}
+            </div>
 
           </div>
 
+          ${
+            order.observations || order.notes
+              ? `
+                <div class="observations">
+                  <strong>OBSERVACIONES:</strong>
+                  <br>
+                  ${escapeHTML(order.observations || order.notes)}
+                </div>
+              `
+              : ""
+          }
 
           <div class="separator"></div>
-
 
           <!-- FOOTER -->
 
           <div class="footer">
 
-            Gracias por elegir Que Gusto ❤️
+            ¡GRACIAS POR ELEGIR<br>
+            QUE GUSTO!!!
+
+            <br><br>
+
+            Buen provecho ❤️
 
           </div>
 
         </div>
 
-
         <script>
 
-          setTimeout(() => {
+          window.onload = () => {
 
-            window.focus();
+            setTimeout(() => {
 
-            window.print();
+              window.focus();
+              window.print();
 
-          }, 500);
+            }, 500);
 
+          };
 
           window.onafterprint = () => {
 
             setTimeout(() => {
-
               window.close();
-
-            }, 300);
+            }, 500);
 
           };
 
@@ -412,11 +594,7 @@ const printOrder = (order) => {
   `);
 
   printWindow.document.close();
-
-  printWindow.focus();
 };
-
-
 
 
   /* =====================================================
