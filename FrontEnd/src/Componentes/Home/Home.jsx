@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Cart from "../cart/Cart";
+import Cart from "../Cart/Cart";
 import "./Home.css";
 
 const API_URL = "http://localhost:3000/api";

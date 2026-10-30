@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from "./Componentes/HOME/Home";
-
-import Cart from "./Componentes/cart/Cart";
+import Home from "./Componentes/Home/Home";
+import Cart from "./Componentes/Cart/Cart";
 import AdminLayout from "./Componentes/Admin/layout/AdminLayout";
 import Pedidos from "./Componentes/Admin/pages/Pedidos";
 import Menu from "./Componentes/Admin/pages/Menu";
