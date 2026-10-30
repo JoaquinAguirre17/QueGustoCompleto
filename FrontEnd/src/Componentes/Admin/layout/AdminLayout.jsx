@@ -98,7 +98,7 @@ const AdminLayout = () => {
       >
 
         <div className="qg-admin-brand">
-          <h2>🍗 Que Gusto</h2>
+          <h2>🍗 Que Gusto!!!</h2>
 
           <p className="qg-admin-subtitle">
             Panel del local
