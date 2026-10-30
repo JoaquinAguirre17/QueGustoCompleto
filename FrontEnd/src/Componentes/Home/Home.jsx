@@ -208,7 +208,7 @@ const Home = () => {
 
           <h1>
             Cuando tenés hambre,
-            <span> Que Gusto.</span>
+            <span> Que Gusto!!!</span>
           </h1>
 
           <p>
