@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import "./Ventas.css";
+import { API_URL } from "../../../config/api";
 
-const API_URL = "http://localhost:3000/api";
+
 
 const Ventas = () => {
   const [orders, setOrders] = useState([]);

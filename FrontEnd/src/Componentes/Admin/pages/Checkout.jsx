@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useCart } from "../../../context/CartContext";
+import { API_URL } from "../../../config/api";
 import "./Checkout.css";
 
 const deliveryDisponible = () => {
@@ -157,10 +158,10 @@ const Checkout = () => {
       ========================= */
 
       const res = await axios.post(
-        "http://localhost:3000/api/orders",
-
-        order,
+        `${API_URL}/orders`,
+        order
       );
+
 
       if (!res.data.success) {
         throw new Error("Pedido rechazado");

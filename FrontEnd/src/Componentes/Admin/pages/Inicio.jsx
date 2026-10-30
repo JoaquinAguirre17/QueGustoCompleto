@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import "./Inicio.css";
 
-const API_URL = "http://localhost:3000/api";
+import { API_URL } from "../../../config/api";
 const TIME_ZONE = "America/Argentina/Cordoba";
 const INTERVALO_ACTUALIZACION = 30000;
 

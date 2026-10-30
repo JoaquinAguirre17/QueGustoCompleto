@@ -1,10 +1,8 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Cart from "../Cart/Cart";
+import { API_URL } from "../../config/api";
 import "./Home.css";
-
-const API_URL = "http://localhost:3000/api";
 
 const categories = [
   {

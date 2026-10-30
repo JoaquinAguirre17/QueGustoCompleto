@@ -1,133 +1,58 @@
+
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
+import { SOCKET_URL } from "../../../config/api";
 
-const socket = io("http://localhost:3000");
-
+// Conexión al servidor Socket.IO
+const socket = io(SOCKET_URL, {
+  autoConnect: true,
+  transports: ["websocket", "polling"],
+});
 
 export const useSocket = () => {
-
   const [newOrder, setNewOrder] = useState(null);
-
   const [updatedOrder, setUpdatedOrder] = useState(null);
 
-
   useEffect(() => {
-
-
-    /* =====================================================
-       NUEVO PEDIDO
-    ===================================================== */
-
+    // NUEVO PEDIDO
     const handleNewOrder = (data) => {
-
-      console.log(
-        "🟢 Socket → Nuevo pedido:",
-        data
-      );
-
+      console.log("🟢 Socket → Nuevo pedido:", data);
 
       setNewOrder(data);
 
+      const audio = new Audio("/sounds/new.mp3");
 
-      /* 🔊 Sonido nuevo pedido */
-
-      const audio = new Audio(
-        "/sounds/new.mp3"
-      );
-
-
-      audio
-        .play()
-        .catch((error) => {
-
-          console.warn(
-            "🔇 No se pudo reproducir el sonido:",
-            error
-          );
-
-        });
-
+      audio.play().catch((error) => {
+        console.warn("🔇 No se pudo reproducir el sonido:", error);
+      });
     };
 
-
-    /* =====================================================
-       PEDIDO ACTUALIZADO
-    ===================================================== */
-
+    // PEDIDO ACTUALIZADO
     const handleOrderUpdated = (data) => {
-
-      console.log(
-        "🔄 Socket → Pedido actualizado:",
-        data
-      );
-
+      console.log("🔄 Socket → Pedido actualizado:", data);
 
       setUpdatedOrder(data);
 
+      const audio = new Audio("/sounds/update.mp3");
 
-      /* 🔊 Sonido actualización */
-
-      const audio = new Audio(
-        "/sounds/update.mp3"
-      );
-
-
-      audio
-        .play()
-        .catch((error) => {
-
-          console.warn(
-            "🔇 No se pudo reproducir el sonido:",
-            error
-          );
-
-        });
-
+      audio.play().catch((error) => {
+        console.warn("🔇 No se pudo reproducir el sonido:", error);
+      });
     };
 
+    // EVENTOS
+    socket.on("newOrder", handleNewOrder);
+    socket.on("orderUpdated", handleOrderUpdated);
 
-    /* =====================================================
-       EVENTOS SOCKET.IO
-    ===================================================== */
-
-    socket.on(
-      "newOrder",
-      handleNewOrder
-    );
-
-
-    socket.on(
-      "orderUpdated",
-      handleOrderUpdated
-    );
-
-
-    /* =====================================================
-       LIMPIAR EVENTOS
-    ===================================================== */
-
+    // LIMPIEZA
     return () => {
-
-      socket.off(
-        "newOrder",
-        handleNewOrder
-      );
-
-
-      socket.off(
-        "orderUpdated",
-        handleOrderUpdated
-      );
-
+      socket.off("newOrder", handleNewOrder);
+      socket.off("orderUpdated", handleOrderUpdated);
     };
-
   }, []);
-
 
   return {
     newOrder,
-    updatedOrder
+    updatedOrder,
   };
-
 };
-

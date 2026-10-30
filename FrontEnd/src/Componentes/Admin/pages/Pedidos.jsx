@@ -1,13 +1,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { API_URL } from "../../../config/api";
 
 import { useSocket } from "../hooks/useSocket";
 import OrderCard from "../../OrderCard/OrderCard";
 
 import "./Pedidos.css";
 
-const API_URL = "http://localhost:3000/api";
+
 
 const HIDDEN_STATUSES = ["Entregado", "Cancelado"];
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-
+import { API_URL } from "../../config/api";
 import ProductCard from "../ProductCard/ProductCard";
 
 import "./Products.css";
@@ -25,10 +25,7 @@ const Products = () => {
       try {
         setLoading(true);
 
-        const res = await axios.get(
-          "http://localhost:3000/api/products"
-        );
-
+        const res = await axios.get(`${API_URL}/products`);
         const data =
           res.data.products || res.data || [];
 
@@ -130,7 +127,7 @@ const Products = () => {
         <h1>
           {category
             ? category.charAt(0).toUpperCase() +
-              category.slice(1)
+            category.slice(1)
             : "Todos los productos"}
         </h1>
 

@@ -2,9 +2,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "./Menu.css";
+import { API_URL } from "../../../config/api";
 
-const API = "http://localhost:3000/api";
-
+const API = API_URL;
 /* =========================================
    PRODUCTO VACÍO
 ========================================= */

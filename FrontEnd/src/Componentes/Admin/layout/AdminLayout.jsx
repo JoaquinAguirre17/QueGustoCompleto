@@ -5,7 +5,7 @@ import { FaBars, FaTimes } from "react-icons/fa";
 import { useSocket } from "./../hooks/useSocket";
 import "./AdminLayout.css";
 
-const API_URL = "http://localhost:3000/api";
+import { API_URL } from "../../../config/api";
 
 const AdminLayout = () => {
   const [open, setOpen] = useState(false);
