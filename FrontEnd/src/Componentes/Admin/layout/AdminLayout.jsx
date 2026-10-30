@@ -78,7 +78,7 @@ const AdminLayout = () => {
 
       <header className="qg-admin-mobileHeader">
         <h2 className="qg-admin-logo">
-          🍗 Que Gusto
+          🍗 Que Gusto!!!
         </h2>
 
         <button
