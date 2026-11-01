@@ -1,4 +1,9 @@
+
 import mongoose from "mongoose";
+
+/* =========================
+   OPCIONES DE MODIFICADORES
+========================= */
 
 const modifierOptionSchema = new mongoose.Schema(
   {
@@ -21,6 +26,10 @@ const modifierOptionSchema = new mongoose.Schema(
   },
   { _id: false }
 );
+
+/* =========================
+   MODIFICADORES
+========================= */
 
 const modifierSchema = new mongoose.Schema(
   {
@@ -56,11 +65,32 @@ const modifierSchema = new mongoose.Schema(
   { _id: false }
 );
 
+/* =========================
+   IMAGEN LOCAL
+========================= */
+
+const imageSchema = new mongoose.Schema(
+  {
+    data: {
+      type: Buffer,
+      required: true
+    },
+
+    contentType: {
+      type: String,
+      required: true
+    }
+  },
+  { _id: false }
+);
+
+/* =========================
+   PRODUCTO
+========================= */
+
 const productSchema = new mongoose.Schema(
   {
-    /* =========================
-       DATOS PRINCIPALES
-    ========================= */
+    /* DATOS PRINCIPALES */
 
     title: {
       type: String,
@@ -79,9 +109,7 @@ const productSchema = new mongoose.Schema(
       trim: true
     },
 
-    /* =========================
-       PRECIOS
-    ========================= */
+    /* PRECIOS */
 
     price: {
       type: Number,
@@ -95,18 +123,14 @@ const productSchema = new mongoose.Schema(
       min: 0
     },
 
-    /* =========================
-       IMAGEN
-    ========================= */
+    /* IMAGEN ALMACENADA EN MONGODB */
 
     image: {
-      type: String,
-      default: ""
+      type: imageSchema,
+      default: null
     },
 
-    /* =========================
-       STOCK
-    ========================= */
+    /* STOCK */
 
     useStock: {
       type: Boolean,
@@ -119,15 +143,11 @@ const productSchema = new mongoose.Schema(
       min: 0
     },
 
-    /* =========================
-       MODIFICADORES
-    ========================= */
+    /* MODIFICADORES */
 
     modifiers: [modifierSchema],
 
-    /* =========================
-       CONFIGURACIÓN
-    ========================= */
+    /* CONFIGURACIÓN */
 
     active: {
       type: Boolean,
@@ -138,9 +158,8 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
-    /* =========================
-   DESTACADOS Y PROMOCIONES
-========================= */
+
+    /* PROMOCIONES */
 
     isPromo: {
       type: Boolean,
@@ -156,7 +175,6 @@ const productSchema = new mongoose.Schema(
   {
     timestamps: true
   }
-
 );
 
 export default mongoose.model("Product", productSchema);

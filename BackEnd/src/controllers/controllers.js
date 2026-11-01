@@ -5,21 +5,24 @@ import Counter from "../models/Counter.js";
 /* ==================================================
                     PRODUCTOS
 ================================================== */
+
 /*=======================================================
  * Obtener todos los productos
- =======================================================*/
+ * Devuelve los productos sin los datos binarios de imagen
+=======================================================*/
 export const getProducts = async (req, res) => {
   try {
     console.log("🔥 Entrando a getProducts");
 
-    const products = await Product.find();
+    const products = await Product.find()
+      .select("-image.data")
+      .sort({ createdAt: -1 })
+      .lean();
 
-    console.log("🔥 Productos:", products);
-
-    return res.json(products);
+    return res.status(200).json(products);
 
   } catch (error) {
-    console.log("💥 ERROR REAL:", error);
+    console.error("💥 Error obteniendo productos:", error);
 
     return res.status(500).json({
       success: false,
@@ -28,15 +31,16 @@ export const getProducts = async (req, res) => {
   }
 };
 
+
 /*=======================================================
  * Obtener producto por ID
- ======================================================*/
+ * Devuelve los datos del producto sin el Buffer
+=======================================================*/
 export const getProductById = async (req, res) => {
   try {
-
-    const product = await Product.findById(
-      req.params.id
-    );
+    const product = await Product.findById(req.params.id)
+      .select("-image.data")
+      .lean();
 
     if (!product) {
       return res.status(404).json({
@@ -45,50 +49,115 @@ export const getProductById = async (req, res) => {
       });
     }
 
-    res.status(200).json(product);
+    return res.status(200).json(product);
 
   } catch (error) {
     console.error("Error obteniendo producto:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Error obteniendo producto"
     });
   }
 };
 
+
+/*=======================================================
+ * Obtener imagen local de un producto
+ * Devuelve el Buffer almacenado en MongoDB
+=======================================================*/
+export const getProductImage = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id)
+      .select("image");
+
+    if (!product || !product.image?.data) {
+      return res.status(404).json({
+        success: false,
+        message: "Imagen no encontrada"
+      });
+    }
+
+    res.set("Content-Type", product.image.contentType);
+    res.set("Cache-Control", "public, max-age=86400");
+
+    return res.send(product.image.data);
+
+  } catch (error) {
+    console.error("Error obteniendo imagen:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Error obteniendo imagen"
+    });
+  }
+};
+
+
 /*==================================================
  * Crear producto
  =================================================*/
+
+/*============================================
+ * Crear producto
+ =============================================*/
 export const createProduct = async (req, res) => {
   try {
-
     const {
       title,
       description,
       category,
       price,
       cost,
-      image,
       stock,
       useStock,
       modifiers,
       featured,
-      active
+      active,
+      isPromo,
+      promoPrice
     } = req.body;
+
+    // Validar que se haya enviado una imagen
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Debés seleccionar una imagen para el producto"
+      });
+    }
+
+    // Preparar imagen para MongoDB
+    const image = {
+      data: req.file.buffer,
+      contentType: req.file.mimetype
+    };
+
+    // Convertir modificadores si llegan como JSON
+    const parsedModifiers = modifiers
+      ? typeof modifiers === "string"
+        ? JSON.parse(modifiers)
+        : modifiers
+      : [];
 
     const product = await Product.create({
       title,
       description,
       category,
-      price,
-      cost,
+      price: Number(price),
+      cost: Number(cost || 0),
       image,
-      stock,
-      useStock,
-      modifiers: modifiers || [],
-      featured,
-      active
+      stock: Number(stock || 0),
+      useStock: useStock === true || useStock === "true",
+      modifiers: parsedModifiers,
+      featured: featured === true || featured === "true",
+      active: active === undefined
+        ? true
+        : active === true || active === "true",
+      isPromo: isPromo === true || isPromo === "true",
+      promoPrice:
+        promoPrice !== undefined && promoPrice !== ""
+          ? Number(promoPrice)
+          : null
     });
 
     res.status(201).json({
@@ -97,79 +166,122 @@ export const createProduct = async (req, res) => {
     });
 
   } catch (error) {
-
     console.error("Error creando producto:", error);
 
     res.status(500).json({
       success: false,
       message: "Error creando producto"
     });
-
   }
 };
+
 
 /*============================================
  * Actualizar producto
  =============================================*/
 export const updateProduct = async (req, res) => {
-
   try {
+    const {
+      title,
+      description,
+      category,
+      price,
+      cost,
+      stock,
+      useStock,
+      modifiers,
+      featured,
+      active,
+      isPromo,
+      promoPrice
+    } = req.body;
 
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set:req.body
-      },
-      {
-        new:true,
-        runValidators:true
-      }
-    );
+    const product = await Product.findById(req.params.id);
 
-
-    if(!product){
-
+    if (!product) {
       return res.status(404).json({
-        success:false,
-        message:"Producto no encontrado"
+        success: false,
+        message: "Producto no encontrado"
       });
-
     }
 
+    // Actualizar datos principales
+    if (title !== undefined) product.title = title;
+    if (description !== undefined) product.description = description;
+    if (category !== undefined) product.category = category;
+
+    if (price !== undefined) product.price = Number(price);
+    if (cost !== undefined) product.cost = Number(cost);
+
+    if (stock !== undefined) product.stock = Number(stock);
+
+    if (useStock !== undefined) {
+      product.useStock = useStock === true || useStock === "true";
+    }
+
+    // Actualizar modificadores
+    if (modifiers !== undefined) {
+      product.modifiers =
+        typeof modifiers === "string"
+          ? JSON.parse(modifiers)
+          : modifiers;
+    }
+
+    // Configuración
+    if (featured !== undefined) {
+      product.featured = featured === true || featured === "true";
+    }
+
+    if (active !== undefined) {
+      product.active = active === true || active === "true";
+    }
+
+    if (isPromo !== undefined) {
+      product.isPromo = isPromo === true || isPromo === "true";
+    }
+
+    if (promoPrice !== undefined) {
+      product.promoPrice =
+        promoPrice !== ""
+          ? Number(promoPrice)
+          : null;
+    }
+
+    // Si se envía una nueva imagen, reemplazar la anterior.
+    // Si no se envía, conservar la imagen existente.
+    if (req.file) {
+      product.image = {
+        data: req.file.buffer,
+        contentType: req.file.mimetype
+      };
+    }
+
+    await product.save();
 
     res.status(200).json({
-      success:true,
+      success: true,
       product
     });
 
-
-  } catch(error){
-
-    console.error(
-      "Error actualizando producto:",
-      error
-    );
-
+  } catch (error) {
+    console.error("Error actualizando producto:", error);
 
     res.status(500).json({
-      success:false,
-      message:"Error actualizando producto"
+      success: false,
+      message: "Error actualizando producto"
     });
-
   }
-
 };
 
-/*================================================
+
+/*============================================
  * Eliminar producto
- *==============================================*/
+ =============================================*/
 export const deleteProduct = async (req, res) => {
   try {
-
-    const product =
-      await Product.findByIdAndDelete(
-        req.params.id
-      );
+    const product = await Product.findByIdAndDelete(
+      req.params.id
+    );
 
     if (!product) {
       return res.status(404).json({
@@ -192,6 +304,7 @@ export const deleteProduct = async (req, res) => {
     });
   }
 };
+
 
 /* ==================================================
                     CATEGORÍAS

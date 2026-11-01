@@ -1,4 +1,6 @@
+
 import { Router } from "express";
+import multer from "multer";
 
 import {
   /* =========================
@@ -15,16 +17,48 @@ import {
   ========================= */
   createCategory,
   getCategories,
-/* =========================
-   PEDIDOS
-========================= */
-getOrders,
-getOrderById,
-createOrder,
-updateOrderStatus,
+
+  /* =========================
+     PEDIDOS
+  ========================= */
+  getOrders,
+  getOrderById,
+  createOrder,
+  updateOrderStatus,
+  getProductImage,
+
 } from "../controllers/controllers.js";
 
 const router = Router();
+
+/* ==================================================
+   CONFIGURACIÓN DE MULTER
+   Imágenes almacenadas en memoria para MongoDB
+================================================== */
+
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage,
+
+  // Límite máximo de imagen: 5 MB
+  limits: {
+    fileSize: 5 * 1024 * 1024
+  },
+
+  // Permitir solamente imágenes
+  fileFilter: (req, file, cb) => {
+
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(
+        new Error("Solo se permiten archivos de imagen")
+      );
+    }
+
+    cb(null, true);
+  }
+});
+
 
 /* ==================================================
    PRODUCTOS
@@ -33,27 +67,54 @@ const router = Router();
 /**
  * Obtener todos los productos
  */
-router.get("/products", getProducts);
+router.get(
+  "/products",
+  getProducts
+);
 
 /**
  * Obtener un producto por ID
  */
-router.get("/products/:id", getProductById);
+router.get(
+  "/products/:id",
+  getProductById
+);
+/**
+ * Obtener imagen local del producto
+ */
+router.get(
+  "/products/:id/image",
+  getProductImage
+);
 
 /**
- * Crear producto
+ * Crear producto con imagen local
  */
-router.post("/products", createProduct);
+router.post(
+  "/products",
+  upload.single("image"),
+  createProduct
+);
 
 /**
  * Actualizar producto
+ * La imagen es opcional.
+ * Si no se envía una nueva, conserva la anterior.
  */
-router.put("/products/:id", updateProduct);
+router.put(
+  "/products/:id",
+  upload.single("image"),
+  updateProduct
+);
 
 /**
  * Eliminar producto
  */
-router.delete("/products/:id", deleteProduct);
+router.delete(
+  "/products/:id",
+  deleteProduct
+);
+
 
 /* ==================================================
    CATEGORÍAS
@@ -62,12 +123,19 @@ router.delete("/products/:id", deleteProduct);
 /**
  * Obtener categorías
  */
-router.get("/categories", getCategories);
+router.get(
+  "/categories",
+  getCategories
+);
 
 /**
  * Crear categoría
  */
-router.post("/categories", createCategory);
+router.post(
+  "/categories",
+  createCategory
+);
+
 
 /* ==================================================
    PEDIDOS
@@ -104,7 +172,6 @@ router.patch(
   "/orders/:id/status",
   updateOrderStatus
 );
-
 
 
 export default router;
