@@ -43,15 +43,45 @@ const getProductPrice = (product) => {
 };
 
 const getProductImage = (product) => {
-  const image = product.image;
+  const image = product?.image;
 
-  if (typeof image === "string") return image;
-  if (image?.url) return image.url;
+  // Construye la URL del endpoint del backend.
+  const productId = product?._id ?? product?.id;
 
-  if (Array.isArray(product.images) && product.images.length > 0) {
+  const localImageUrl = productId
+    ? `${API_URL.replace(/\/$/, "")}/products/${productId}/image`
+    : "";
+
+  // Imagen guardada como URL.
+  if (typeof image === "string" && image.trim()) {
+    return image;
+  }
+
+  if (image?.url) {
+    return image.url;
+  }
+
+  // Imagen guardada directamente en MongoDB.
+  if (
+    image?.source === "mongo" ||
+    image?.contentType ||
+    image?.data ||
+    image?.existing
+  ) {
+    return localImageUrl;
+  }
+
+  // Compatibilidad con productos que utilizan un array de imágenes.
+  if (Array.isArray(product?.images) && product.images.length > 0) {
     const firstImage = product.images[0];
-    if (typeof firstImage === "string") return firstImage;
-    if (firstImage?.url) return firstImage.url;
+
+    if (typeof firstImage === "string") {
+      return firstImage;
+    }
+
+    if (firstImage?.url) {
+      return firstImage.url;
+    }
   }
 
   return "";
@@ -157,7 +187,19 @@ const Home = () => {
           aria-label={`Ver ${product.title}`}
         >
           {image ? (
-            <img src={image} alt={product.title} loading="lazy" />
+            <img
+              src={image}
+              alt={product.title || "Producto de Que Gusto"}
+              loading="lazy"
+              onError={(event) => {
+                console.error(
+                  "No se pudo cargar la imagen:",
+                  image
+                );
+
+                event.currentTarget.style.display = "none";
+              }}
+            />
           ) : (
             <span className="qg-home__product-placeholder">🍽️</span>
           )}
@@ -248,7 +290,7 @@ const Home = () => {
         </div>
       </section>
 
-    
+
 
       {/* PROMOCIONES */}
       <section className="qg-home__products-section qg-home__promotions">
