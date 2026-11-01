@@ -1,10 +1,17 @@
+
 import { useState } from "react";
 import { useCart } from "../../context/CartContext";
-import { FaShoppingCart, FaStar } from "react-icons/fa";
+import { API_URL } from "../../config/api";
+
+import {
+  FaShoppingCart,
+  FaStar,
+  FaTag
+} from "react-icons/fa";
+
 import "./ProductCard.css";
 
 const ProductCard = ({ product }) => {
-
   const { addToCart } = useCart();
 
   const [open, setOpen] = useState(false);
@@ -12,77 +19,147 @@ const ProductCard = ({ product }) => {
 
   if (!product) return null;
 
+  /* =========================
+     MODIFICADORES
+  ========================= */
+
   const modifiers = product.modifiers || [];
 
   const hasOptions = modifiers.some(
-    m => m.options?.length > 0
+    (modifier) =>
+      modifier.active !== false &&
+      modifier.options?.some((option) => option.active !== false)
   );
 
+  /* =========================
+     IMAGEN LOCAL
+  ========================= */
+
+  const imageUrl = product.image?.data
+    ? `${API_URL}/products/${product._id}/image`
+    : `${API_URL}/products/${product._id}/image`;
+
+  const fallbackImage = "/images/no-image.jpg";
+
+  /* =========================
+     PRECIO
+  ========================= */
+
+  const hasPromo =
+    product.isPromo &&
+    product.promoPrice !== null &&
+    product.promoPrice !== undefined &&
+    Number(product.promoPrice) > 0 &&
+    Number(product.promoPrice) < Number(product.price);
+
+  const finalPrice = hasPromo
+    ? Number(product.promoPrice)
+    : Number(product.price);
+
+  /* =========================
+     SELECCIONAR OPCIÓN
+  ========================= */
 
   const selectOption = (name, value) => {
-    setSelectedModifiers({
-      ...selectedModifiers,
+    setSelectedModifiers((prev) => ({
+      ...prev,
       [name]: value
+    }));
+  };
+
+  /* =========================
+     AGREGAR AL CARRITO
+  ========================= */
+
+  const handleAdd = () => {
+    for (const modifier of modifiers) {
+      if (modifier.active === false) continue;
+
+      const activeOptions = (modifier.options || []).filter(
+        (option) => option.active !== false
+      );
+
+      if (
+        modifier.required &&
+        activeOptions.length > 0 &&
+        !selectedModifiers[modifier.name]
+      ) {
+        alert(`Elegí ${modifier.name}`);
+        return;
+      }
+    }
+
+    const productToCart = {
+      ...product,
+      price: finalPrice,
+      originalPrice: hasPromo ? Number(product.price) : null,
+      selectedModifiers
+    };
+
+    addToCart(productToCart);
+
+    setOpen(false);
+    setSelectedModifiers({});
+  };
+
+  /* =========================
+     AGREGAR DIRECTAMENTE
+  ========================= */
+
+  const handleQuickAdd = () => {
+    if (hasOptions) {
+      setOpen(true);
+      return;
+    }
+
+    addToCart({
+      ...product,
+      price: finalPrice,
+      originalPrice: hasPromo ? Number(product.price) : null
     });
   };
 
-
- const handleAdd=()=>{
-
-console.log("ANTES DE ENVIAR AL CARRITO:",{
-...product,
-selectedModifiers
-});
-
-
-for(const modifier of modifiers){
-
-if(
-modifier.required &&
-!selectedModifiers[modifier.name]
-){
-
-alert(`Elegí ${modifier.name}`);
-return;
-
-}
-
-}
-
-
-addToCart({
-...product,
-selectedModifiers
-});
-
-
-setOpen(false);
-setSelectedModifiers({});
-
-};
-
-
-
   return (
     <>
+      {/* =========================
+          TARJETA DEL PRODUCTO
+      ========================= */}
 
       <div className="qg-card">
+
+        {/* IMAGEN */}
 
         <div className="qg-card-image">
 
           <img
-            src={product.image || "/images/no-image.jpg"}
+            src={imageUrl}
             alt={product.title}
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = fallbackImage;
+            }}
           />
 
-          {product.featured &&
+          {/* DESTACADO */}
+
+          {product.featured && (
             <span className="qg-featured">
               <FaStar /> Destacado
             </span>
-          }
+          )}
+
+          {/* PROMOCIÓN */}
+
+          {hasPromo && (
+            <span className="qg-promo">
+              <FaTag /> Oferta
+            </span>
+          )}
 
         </div>
 
+        {/* INFORMACIÓN */}
 
         <div className="qg-card-body">
 
@@ -96,24 +173,27 @@ setSelectedModifiers({});
             {product.description || "Sin descripción"}
           </p>
 
+          {/* PRECIO Y BOTÓN */}
 
           <div className="qg-card-footer">
 
             <div className="qg-price">
-              ${product.price}
+
+              {hasPromo && (
+                <span className="qg-original-price">
+                  ${Number(product.price).toLocaleString("es-AR")}
+                </span>
+              )}
+
+              <span>
+                ${finalPrice.toLocaleString("es-AR")}
+              </span>
+
             </div>
 
             <button
               className="qg-add-btn"
-              onClick={() => {
-
-                if (hasOptions) {
-                  setOpen(true);
-                } else {
-                  addToCart(product);
-                }
-
-              }}
+              onClick={handleQuickAdd}
             >
               <FaShoppingCart />
               Agregar
@@ -125,10 +205,11 @@ setSelectedModifiers({});
 
       </div>
 
+      {/* =========================
+          MODAL DE MODIFICADORES
+      ========================= */}
 
-
-      {open &&
-
+      {open && (
         <div
           className="qg-modal-overlay"
           onClick={() => setOpen(false)}
@@ -136,63 +217,75 @@ setSelectedModifiers({});
 
           <div
             className="qg-modal"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
 
-            <h2>
-              {product.title}
-            </h2>
+            <h2>{product.title}</h2>
 
             <p>
               Elegí tus opciones
             </p>
 
+            {/* MODIFICADORES */}
 
-            {modifiers.map((modifier, index) => (
+            {modifiers
+              .filter((modifier) => modifier.active !== false)
+              .map((modifier, index) => {
 
-              <div
-                key={index}
-                className="qg-modifier"
-              >
+                const activeOptions = (modifier.options || []).filter(
+                  (option) => option.active !== false
+                );
 
-                <h3>
-                  {modifier.name}
-                  {modifier.required && " *"}
-                </h3>
+                if (activeOptions.length === 0) return null;
 
-
-                {modifier.options.map((opt, i) => (
-
-                  <label
-                    key={i}
-                    className="qg-option"
+                return (
+                  <div
+                    key={index}
+                    className="qg-modifier"
                   >
 
-                    <input
-                      type="radio"
-                      name={modifier.name}
-                      checked={
-                        selectedModifiers[modifier.name] === opt.label
-                      }
-                      onChange={() =>
-                        selectOption(
-                          modifier.name,
-                          opt.label
-                        )
-                      }
-                    />
+                    <h3>
+                      {modifier.name}
+                      {modifier.required && " *"}
+                    </h3>
 
-                    {opt.label}
+                    {activeOptions.map((option, i) => (
+                      <label
+                        key={i}
+                        className="qg-option"
+                      >
 
-                  </label>
+                        <input
+                          type="radio"
+                          name={modifier.name}
+                          checked={
+                            selectedModifiers[modifier.name] ===
+                            option.label
+                          }
+                          onChange={() =>
+                            selectOption(
+                              modifier.name,
+                              option.label
+                            )
+                          }
+                        />
 
-                ))}
+                        <span>{option.label}</span>
 
-              </div>
+                        {option.price > 0 && (
+                          <span>
+                            +${Number(option.price).toLocaleString("es-AR")}
+                          </span>
+                        )}
 
-            ))}
+                      </label>
+                    ))}
 
+                  </div>
+                );
+              })}
 
+            {/* BOTONES */}
 
             <div className="qg-modal-buttons">
 
@@ -205,25 +298,18 @@ setSelectedModifiers({});
                 Cancelar
               </button>
 
-
-              <button
-                onClick={handleAdd}
-              >
+              <button onClick={handleAdd}>
                 Confirmar
               </button>
 
             </div>
 
-
           </div>
 
         </div>
-
-      }
-
+      )}
     </>
   );
-
 };
 
 export default ProductCard;

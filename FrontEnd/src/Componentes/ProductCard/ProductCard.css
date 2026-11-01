@@ -1,339 +1,545 @@
-.qg-card{
-background:#fff;
-border-radius:20px;
-overflow:hidden;
-box-shadow:0 8px 25px rgba(0,0,0,.10);
-display:flex;
-flex-direction:column;
-transition:.25s;
-height:100%;
+
+/* =========================================
+   PRODUCT CARD - QUE GUSTO
+   Diseño moderno, limpio y responsive
+========================================= */
+
+.qg-card {
+  --qg-primary: #e85d35;
+  --qg-primary-dark: #cf4724;
+  --qg-text: #252525;
+  --qg-muted: #777;
+  --qg-border: #eeeeee;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+
+  background: #ffffff;
+  border: 1px solid var(--qg-border);
+  border-radius: 16px;
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 
-.qg-card:hover{
-transform:translateY(-5px);
-box-shadow:0 15px 35px rgba(0,0,0,.15);
+.qg-card:hover {
+  transform: translateY(-5px);
+  border-color: #e4d5ce;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.09);
 }
 
+/* =========================================
+   IMAGEN
+========================================= */
 
-/* IMAGEN */
-
-.qg-card-image{
-position:relative;
-width:100%;
-height:220px;
-overflow:hidden;
+.qg-card-image {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  background: #f5f5f5;
 }
 
-.qg-card-image img{
-width:100%;
-height:100%;
-object-fit:cover;
-transition:.3s;
+.qg-card-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  transition: transform 0.4s ease;
 }
 
-.qg-card:hover img{
-transform:scale(1.05);
+.qg-card:hover .qg-card-image img {
+  transform: scale(1.045);
 }
 
+/* =========================================
+   ETIQUETAS
+========================================= */
 
-.qg-featured{
-position:absolute;
-top:15px;
-left:15px;
-background:#f59e0b;
-color:white;
-padding:7px 12px;
-border-radius:20px;
-font-size:13px;
-font-weight:700;
-display:flex;
-align-items:center;
-gap:5px;
+.qg-featured,
+.qg-promo {
+  position: absolute;
+  top: 12px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  padding: 7px 11px;
+  border-radius: 7px;
+
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  z-index: 2;
 }
 
-
-/* CUERPO */
-
-.qg-card-body{
-padding:18px;
-display:flex;
-flex-direction:column;
-flex:1;
-gap:10px;
+.qg-featured {
+  left: 12px;
+  background: #252525;
 }
 
-
-.qg-category{
-width:max-content;
-background:#fee2e2;
-color:#dc2626;
-padding:5px 12px;
-border-radius:20px;
-font-size:12px;
-font-weight:700;
-text-transform:uppercase;
+.qg-featured svg {
+  color: #ffc857;
 }
 
-
-.qg-card-body h3{
-margin:0;
-font-size:22px;
-color:#1f2937;
+.qg-promo {
+  right: 12px;
+  background: #df493d;
 }
 
+/* =========================================
+   CONTENIDO
+========================================= */
 
-.qg-card-body p{
-margin:0;
-color:#6b7280;
-font-size:15px;
-line-height:1.4;
+.qg-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+
+  padding: 17px;
 }
 
+.qg-category {
+  display: inline-block;
+  width: fit-content;
+  margin-bottom: 8px;
 
-/* FOOTER */
-
-.qg-card-footer{
-margin-top:auto;
-display:flex;
-align-items:center;
-justify-content:space-between;
-gap:10px;
-padding-top:15px;
+  color: var(--qg-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
 
+.qg-card-body h3 {
+  margin: 0 0 9px;
 
-.qg-price{
-font-size:25px;
-font-weight:800;
-color:#16a34a;
+  color: var(--qg-text);
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1.35;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
+.qg-card-body > p {
+  margin: 0 0 18px;
 
-.qg-add-btn{
-background:#f97316;
-color:white;
-border:none;
-padding:12px 18px;
-border-radius:12px;
-font-size:15px;
-font-weight:700;
-display:flex;
-align-items:center;
-gap:8px;
-cursor:pointer;
-transition:.25s;
+  color: var(--qg-muted);
+  font-size: 13px;
+  line-height: 1.6;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
+/* =========================================
+   FOOTER
+========================================= */
 
-.qg-add-btn:hover{
-background:#ea580c;
-transform:scale(1.05);
+.qg-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  margin-top: auto;
+  padding-top: 13px;
+
+  border-top: 1px solid #f0f0f0;
 }
 
+/* =========================================
+   PRECIOS
+========================================= */
 
-/* =====================
-      MODAL
-===================== */
+.qg-price {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 
-
-.qg-modal-overlay{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,.65);
-display:flex;
-align-items:center;
-justify-content:center;
-padding:20px;
-z-index:999;
+  color: var(--qg-text);
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
-
-.qg-modal{
-background:white;
-width:100%;
-max-width:500px;
-max-height:90vh;
-overflow-y:auto;
-border-radius:25px;
-padding:30px;
-box-shadow:0 20px 50px rgba(0,0,0,.3);
-animation:qgModal .25s ease;
+.qg-original-price {
+  color: #999999;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: line-through;
 }
 
+/* =========================================
+   BOTÓN AGREGAR
+========================================= */
 
-@keyframes qgModal{
+.qg-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 
-from{
-opacity:0;
-transform:scale(.9);
+  min-height: 42px;
+  padding: 0 15px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: var(--qg-primary);
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-to{
-opacity:1;
-transform:scale(1);
+.qg-add-btn:hover {
+  background: var(--qg-primary-dark);
+  box-shadow: 0 5px 13px rgba(232, 93, 53, 0.23);
+  transform: translateY(-2px);
 }
 
+.qg-add-btn:active {
+  transform: scale(0.96);
 }
 
-
-.qg-modal h2{
-margin:0 0 5px;
-font-size:26px;
-color:#111827;
+.qg-add-btn svg {
+  font-size: 14px;
 }
 
+/* =========================================
+   MODAL - FONDO
+========================================= */
 
-.qg-modal>p{
-color:#64748b;
-margin-bottom:20px;
+.qg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(20, 20, 20, 0.65);
+  backdrop-filter: blur(5px);
+
+  animation: qgFadeIn 0.2s ease;
 }
 
+/* =========================================
+   MODAL - CONTENEDOR
+========================================= */
 
-/* MODIFICADORES */
+.qg-modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: 85vh;
 
-.qg-modifier{
-margin-bottom:20px;
+  overflow-y: auto;
+
+  padding: 27px;
+
+  background: #ffffff;
+  border-radius: 17px;
+
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+
+  animation: qgModalIn 0.25s ease;
 }
 
+.qg-modal h2 {
+  margin: 0 0 7px;
 
-.qg-modifier h3{
-font-size:18px;
-color:#1f2937;
-margin-bottom:12px;
+  color: #222222;
+  font-size: 23px;
+  font-weight: 800;
 }
 
+.qg-modal > p {
+  margin: 0 0 23px;
 
-.qg-option{
-display:flex;
-align-items:center;
-gap:12px;
-background:#f8fafc;
-border:2px solid transparent;
-padding:12px;
-border-radius:12px;
-margin-bottom:10px;
-cursor:pointer;
-transition:.2s;
-font-weight:600;
+  color: #777777;
+  font-size: 14px;
 }
 
+/* =========================================
+   MODIFICADORES
+========================================= */
 
-.qg-option:hover{
-background:#fff7ed;
-border-color:#fb923c;
+.qg-modifier {
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+
+  border-bottom: 1px solid #eeeeee;
 }
 
+.qg-modifier h3 {
+  margin: 0 0 13px;
 
-.qg-option input{
-width:18px;
-height:18px;
-accent-color:#f97316;
+  color: #292929;
+  font-size: 15px;
+  font-weight: 750;
 }
 
+.qg-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 
-/* BOTONES MODAL */
+  min-height: 43px;
+  padding: 9px 11px;
+  margin-bottom: 7px;
 
-.qg-modal-buttons{
-display:flex;
-gap:12px;
-margin-top:25px;
+  border: 1px solid #eeeeee;
+  border-radius: 9px;
+
+  color: #444444;
+  font-size: 13px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
-
-.qg-modal-buttons button{
-flex:1;
-padding:13px;
-border-radius:12px;
-border:none;
-font-weight:700;
-font-size:15px;
-cursor:pointer;
+.qg-option:hover {
+  background: #fff7f4;
+  border-color: #efb4a2;
 }
 
+.qg-option input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
 
-.qg-modal-buttons button:first-child{
-background:#e5e7eb;
-color:#374151;
+  accent-color: var(--qg-primary);
+  cursor: pointer;
 }
 
-
-.qg-modal-buttons button:last-child{
-background:#16a34a;
-color:white;
+.qg-option span:first-of-type {
+  flex: 1;
 }
 
-
-.qg-modal-buttons button:last-child:hover{
-background:#15803d;
+.qg-option span:last-child:not(:first-of-type) {
+  color: var(--qg-primary);
+  font-weight: 700;
 }
 
+/* =========================================
+   BOTONES MODAL
+========================================= */
 
+.qg-modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 
-/* TABLET */
-
-@media(max-width:768px){
-
-.qg-card-image{
-height:190px;
+  margin-top: 23px;
 }
 
-.qg-card-body h3{
-font-size:20px;
+.qg-modal-buttons button {
+  min-height: 43px;
+  padding: 0 19px;
+
+  border: none;
+  border-radius: 9px;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+  transition: 0.2s ease;
 }
 
-.qg-price{
-font-size:22px;
+.qg-modal-buttons button:first-child {
+  background: #eeeeee;
+  color: #444444;
 }
 
+.qg-modal-buttons button:first-child:hover {
+  background: #dedede;
 }
 
-
-
-/* CELULAR */
-
-@media(max-width:480px){
-
-.qg-card{
-border-radius:15px;
+.qg-modal-buttons button:last-child {
+  background: var(--qg-primary);
+  color: #ffffff;
 }
 
-
-.qg-card-image{
-height:220px;
+.qg-modal-buttons button:last-child:hover {
+  background: var(--qg-primary-dark);
 }
 
+/* =========================================
+   ANIMACIONES
+========================================= */
 
-.qg-card-body{
-padding:15px;
+@keyframes qgFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
+@keyframes qgModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+  }
 
-.qg-card-footer{
-flex-direction:column;
-align-items:stretch;
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
+/* =========================================
+   RESPONSIVE - TABLETS
+========================================= */
 
-.qg-price{
-text-align:center;
-font-size:26px;
+@media (max-width: 768px) {
+  .qg-card-image {
+    height: 190px;
+  }
+
+  .qg-card-body {
+    padding: 14px;
+  }
+
+  .qg-card-body h3 {
+    font-size: 16px;
+  }
+
+  .qg-price {
+    font-size: 19px;
+  }
 }
 
+/* =========================================
+   RESPONSIVE - CELULARES
+========================================= */
 
-.qg-add-btn{
-justify-content:center;
-width:100%;
+@media (max-width: 480px) {
+  .qg-card {
+    border-radius: 12px;
+  }
+
+  .qg-card:hover {
+    transform: none;
+  }
+
+  .qg-card-image {
+    height: 155px;
+  }
+
+  .qg-card-body {
+    padding: 12px;
+  }
+
+  .qg-category {
+    font-size: 10px;
+  }
+
+  .qg-card-body h3 {
+    font-size: 14px;
+  }
+
+  .qg-card-body > p {
+    font-size: 12px;
+    margin-bottom: 13px;
+  }
+
+  .qg-card-footer {
+    align-items: center;
+    gap: 7px;
+  }
+
+  .qg-price {
+    font-size: 17px;
+  }
+
+  .qg-add-btn {
+    min-height: 38px;
+    padding: 0 10px;
+    gap: 5px;
+    font-size: 11px;
+  }
+
+  .qg-featured,
+  .qg-promo {
+    top: 8px;
+    padding: 6px 8px;
+    font-size: 9px;
+  }
+
+  .qg-featured {
+    left: 8px;
+  }
+
+  .qg-promo {
+    right: 8px;
+  }
+
+  .qg-modal {
+    padding: 21px 17px;
+    border-radius: 14px;
+  }
+
+  .qg-modal h2 {
+    font-size: 20px;
+  }
+
+  .qg-modal-buttons button {
+    flex: 1;
+    padding: 0 10px;
+  }
 }
 
+/* =========================================
+   ACCESIBILIDAD
+========================================= */
 
-.qg-modal{
-padding:20px;
-border-radius:18px;
-}
+@media (prefers-reduced-motion: reduce) {
+  .qg-card,
+  .qg-card-image img,
+  .qg-add-btn,
+  .qg-option {
+    transition: none;
+  }
 
-
-.qg-modal-buttons{
-flex-direction:column;
-}
-
+  .qg-modal-overlay,
+  .qg-modal {
+    animation: none;
+  }
 }

@@ -1,6 +1,8 @@
+
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+
 import { API_URL } from "../../config/api";
 import ProductCard from "../ProductCard/ProductCard";
 
@@ -24,19 +26,27 @@ const Products = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
+        setError("");
 
         const res = await axios.get(`${API_URL}/products`);
-        const data =
-          res.data.products || res.data || [];
 
-        setProducts(data);
+        const data = res.data.products || res.data || [];
+
+        // Preparar URL de imagen local para cada producto
+        const productsWithImages = data.map((product) => ({
+          ...product,
+
+          imageUrl: product.image?.data
+            ? `${API_URL}/products/${product._id}/image`
+            : `${API_URL}/products/${product._id}/image`
+        }));
+
+        setProducts(productsWithImages);
 
       } catch (err) {
-        console.error(err);
+        console.error("Error cargando productos:", err);
 
-        setError(
-          "No se pudieron cargar los productos"
-        );
+        setError("No se pudieron cargar los productos");
 
       } finally {
         setLoading(false);
@@ -50,9 +60,9 @@ const Products = () => {
      FILTRADO + BÚSQUEDA
   ========================= */
   const filteredProducts = useMemo(() => {
-
     let result = [...products];
 
+    // Filtrar por categoría
     if (category) {
       result = result.filter(
         (product) =>
@@ -61,6 +71,7 @@ const Products = () => {
       );
     }
 
+    // Buscar por nombre
     if (search.trim()) {
       result = result.filter((product) =>
         product.title
@@ -69,17 +80,14 @@ const Products = () => {
       );
     }
 
+    // Ordenar productos
     switch (sortBy) {
       case "priceAsc":
-        result.sort(
-          (a, b) => a.price - b.price
-        );
+        result.sort((a, b) => a.price - b.price);
         break;
 
       case "priceDesc":
-        result.sort(
-          (a, b) => b.price - a.price
-        );
+        result.sort((a, b) => b.price - a.price);
         break;
 
       case "name":
@@ -127,7 +135,7 @@ const Products = () => {
         <h1>
           {category
             ? category.charAt(0).toUpperCase() +
-            category.slice(1)
+              category.slice(1)
             : "Todos los productos"}
         </h1>
 
@@ -144,16 +152,12 @@ const Products = () => {
           type="text"
           placeholder="Buscar producto..."
           value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
+          onChange={(e) => setSearch(e.target.value)}
         />
 
         <select
           value={sortBy}
-          onChange={(e) =>
-            setSortBy(e.target.value)
-          }
+          onChange={(e) => setSortBy(e.target.value)}
         >
           <option value="default">
             Ordenar
@@ -174,13 +178,11 @@ const Products = () => {
 
       </div>
 
-      {/* INFO */}
+      {/* INFORMACIÓN */}
       <div className="qg-products-info">
-
         <span>
           {filteredProducts.length} productos
         </span>
-
       </div>
 
       {/* GRID */}
