@@ -9,6 +9,7 @@ import Navbar from './Componentes/Navbar/Navbar';
 import Products from './Componentes/Products/Products';
 import Checkout from './Componentes/Admin/pages/Checkout';
 import Inicio from './Componentes/Admin/pages/Inicio';
+import DetalleProducto from './Componentes/DetalleProducto/DetalleProducto';
 
 const App = () => {
   return (
@@ -19,6 +20,7 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/productos" element={<Products />} />
         <Route path="/productos/:category" element={<Products />} />
+        <Route path="/detalle/:id" element={<DetalleProducto />} />
         {/* CARRITO */}
         <Route path="/cart" element={<Cart />} />
         <Route

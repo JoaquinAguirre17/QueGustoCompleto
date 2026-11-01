@@ -19,49 +19,44 @@ export const CartProvider = ({ children }) => {
 
 
 
-  const addToCart = (product) => {
-    console.log("LLEGA AL CONTEXTO:", product);
-    if (!product || !product._id) {
-      console.error("Producto inválido");
-      return;
-    }
+ 
+const addToCart = (product) => {
+  if (!product || !product._id) {
+    console.error("Producto inválido");
+    return;
+  }
 
+  const quantityToAdd = Math.max(
+    1,
+    Number(product.quantity) || 1
+  );
 
-    const exists = cart.find(
-      item => sameProduct(item, product)
+  setCart((previousCart) => {
+    const exists = previousCart.find(
+      (item) => sameProduct(item, product)
     );
 
-
-
     if (exists) {
-
-      setCart(
-        cart.map(item =>
-          sameProduct(item, product)
-            ?
-            {
+      return previousCart.map((item) =>
+        sameProduct(item, product)
+          ? {
               ...item,
-              quantity: item.quantity + 1
+              quantity: item.quantity + quantityToAdd,
             }
-            :
-            item
-        )
+          : item
       );
-
-
-    } else {
-
-      setCart([
-        ...cart,
-        {
-          ...product,
-          quantity: 1
-        }
-      ]);
-
     }
 
-  };
+    return [
+      ...previousCart,
+      {
+        ...product,
+        quantity: quantityToAdd,
+      },
+    ];
+  });
+};
+
 
 
 
