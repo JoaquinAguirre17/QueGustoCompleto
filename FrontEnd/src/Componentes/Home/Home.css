@@ -1190,3 +1190,79 @@
     transition: none !important;
   }
 }
+/* CONTENEDOR DE PRECIOS */
+.qg-home__price-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+/* PRECIO ORIGINAL */
+.qg-home__regular-price {
+  color: #999;
+  font-size: 13px;
+  text-decoration: line-through;
+  font-weight: 500;
+}
+
+/* PRECIO PROMOCIONAL */
+.qg-home__promo-price {
+  color: #26945b;
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+/* AHORRO */
+.qg-home__savings {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: #e4f5e9;
+  color: #21834c;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* PORCENTAJE DE DESCUENTO EN LA IMAGEN */
+.qg-home__promo-discount {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 2;
+  padding: 8px 12px;
+  border-radius: 30px;
+  background: #26945b;
+  color: white;
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
+}
+
+/* TARJETA PROMOCIONAL */
+.qg-home__product-card--promo {
+  border: 1px solid rgba(38, 148, 91, 0.15);
+}
+
+.qg-home__product-card--promo .qg-home__product-footer {
+  align-items: flex-end;
+}
+
+@media (max-width: 480px) {
+  .qg-home__promo-price {
+    font-size: 20px;
+  }
+
+  .qg-home__savings {
+    font-size: 10px;
+  }
+
+  .qg-home__promo-discount {
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+}

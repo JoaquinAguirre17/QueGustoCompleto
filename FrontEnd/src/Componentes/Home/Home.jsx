@@ -37,9 +37,52 @@ const normalizeProducts = (data) => {
   return [];
 };
 
-const getProductPrice = (product) => {
-  const price = Number(product.price ?? product.pricing?.sale ?? product.pricing?.list ?? 0);
+// Precio original del producto.
+const getRegularPrice = (product) => {
+  const price = Number(
+    product.price ??
+    product.pricing?.list ??
+    product.pricing?.sale ??
+    0
+  );
+
   return Number.isFinite(price) ? price : 0;
+};
+
+// Información de la promoción.
+const getPriceInfo = (product) => {
+  const regularPrice = getRegularPrice(product);
+
+  const promoPrice = Number(
+    product.promoPrice ?? 0
+  );
+
+  // Solo mostramos descuento si el precio promocional
+  // es válido y menor al precio original.
+  const hasDiscount =
+    product.isPromo === true &&
+    promoPrice > 0 &&
+    regularPrice > promoPrice;
+
+  const finalPrice = hasDiscount
+    ? promoPrice
+    : regularPrice;
+
+  const savings = hasDiscount
+    ? regularPrice - promoPrice
+    : 0;
+
+  const savingsPercentage = hasDiscount
+    ? Math.round((savings / regularPrice) * 100)
+    : 0;
+
+  return {
+    regularPrice,
+    promoPrice: finalPrice,
+    savings,
+    savingsPercentage,
+    hasDiscount,
+  };
 };
 
 const getProductImage = (product) => {
@@ -171,73 +214,102 @@ const Home = () => {
     }
   };
 
-  const renderProductCard = (product, promotion = false) => {
-    const image = getProductImage(product);
-    const price = getProductPrice(product);
+ const renderProductCard = (product, promotion = false) => {
+  const image = getProductImage(product);
+  const priceInfo = getPriceInfo(product);
 
-    return (
-      <article
-        className="qg-home__product-card"
-        key={product._id ?? product.id ?? product.title}
+  return (
+    <article
+      className={`qg-home__product-card ${
+        promotion ? "qg-home__product-card--promo" : ""
+      }`}
+      key={product._id ?? product.id ?? product.title}
+    >
+      <button
+        type="button"
+        className="qg-home__product-image"
+        onClick={() => openProduct(product)}
+        aria-label={`Ver ${product.title}`}
       >
-        <button
-          type="button"
-          className="qg-home__product-image"
-          onClick={() => openProduct(product)}
-          aria-label={`Ver ${product.title}`}
-        >
-          {image ? (
-            <img
-              src={image}
-              alt={product.title || "Producto de Que Gusto"}
-              loading="lazy"
-              onError={(event) => {
-                console.error(
-                  "No se pudo cargar la imagen:",
-                  image
-                );
-
-                event.currentTarget.style.display = "none";
-              }}
-            />
-          ) : (
-            <span className="qg-home__product-placeholder">🍽️</span>
-          )}
-
-          {promotion && (
-            <span className="qg-home__product-badge">
-              ✨ En promoción
-            </span>
-          )}
-        </button>
-
-        <div className="qg-home__product-info">
-          <span className="qg-home__product-category">
-            {product.category || "Que Gusto"}
+        {image ? (
+          <img
+            src={image}
+            alt={product.title || "Producto de Que Gusto"}
+            loading="lazy"
+            onError={(event) => {
+              console.error("No se pudo cargar la imagen:", image);
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <span className="qg-home__product-placeholder">
+            🍽️
           </span>
+        )}
 
-          <h3>{product.title || "Producto"}</h3>
+        {promotion && (
+          <span className="qg-home__product-badge">
+            ✨ En promoción
+          </span>
+        )}
 
-          {product.description && (
-            <p>{product.description}</p>
-          )}
+        {promotion && priceInfo.hasDiscount && (
+          <span className="qg-home__promo-discount">
+            -{priceInfo.savingsPercentage}%
+          </span>
+        )}
+      </button>
 
-          <div className="qg-home__product-footer">
-            <strong>{formatPrice(price)}</strong>
+      <div className="qg-home__product-info">
+        <span className="qg-home__product-category">
+          {product.category || "Que Gusto"}
+        </span>
 
-            <button
-              type="button"
-              className="qg-home__product-button"
-              onClick={() => openProduct(product)}
-              aria-label={`Ver detalles de ${product.title}`}
-            >
-              Ver producto <span aria-hidden="true">→</span>
-            </button>
+        <h3>{product.title || "Producto"}</h3>
+
+        {product.description && (
+          <p>{product.description}</p>
+        )}
+
+        <div className="qg-home__product-footer">
+          <div className="qg-home__price-container">
+
+            {promotion && priceInfo.hasDiscount ? (
+              <>
+                <span className="qg-home__regular-price">
+                  {formatPrice(priceInfo.regularPrice)}
+                </span>
+
+                <strong className="qg-home__promo-price">
+                  {formatPrice(priceInfo.promoPrice)}
+                </strong>
+
+                <span className="qg-home__savings">
+                  <span>🎉</span>
+                  Ahorrás {formatPrice(priceInfo.savings)}
+                </span>
+              </>
+            ) : (
+              <strong>
+                {formatPrice(priceInfo.regularPrice)}
+              </strong>
+            )}
+
           </div>
+
+          <button
+            type="button"
+            className="qg-home__product-button"
+            onClick={() => openProduct(product)}
+            aria-label={`Ver detalles de ${product.title}`}
+          >
+            Ver producto <span aria-hidden="true">→</span>
+          </button>
         </div>
-      </article>
-    );
-  };
+      </div>
+    </article>
+  );
+};
 
   return (
     <main className="qg-home">
