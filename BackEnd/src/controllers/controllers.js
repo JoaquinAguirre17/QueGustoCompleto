@@ -311,9 +311,12 @@ const validatePromoConfig = async (
  * CREAR PRODUCTO
 =============================================*/
 
+/*============================================
+ * CREAR PRODUCTO
+=============================================*/
+
 export const createProduct = async (req, res) => {
   try {
-
     const {
       title,
       description,
@@ -334,14 +337,24 @@ export const createProduct = async (req, res) => {
        VALIDACIONES BÁSICAS
     ========================================== */
 
-    if (!title || !category || price === undefined || price === "") {
+    if (
+      !title?.trim() ||
+      !category ||
+      price === undefined ||
+      price === ""
+    ) {
       return res.status(400).json({
         success: false,
         message: "Faltan datos obligatorios del producto"
       });
     }
 
-    if (!Number.isFinite(Number(price)) || Number(price) < 0) {
+    const numericPrice = Number(price);
+
+    if (
+      !Number.isFinite(numericPrice) ||
+      numericPrice < 0
+    ) {
       return res.status(400).json({
         success: false,
         message: "El precio del producto es inválido"
@@ -380,11 +393,68 @@ export const createProduct = async (req, res) => {
       });
     }
 
+    if (
+      !parsedPromoConfig ||
+      typeof parsedPromoConfig !== "object" ||
+      Array.isArray(parsedPromoConfig)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "La configuración de promoción es inválida"
+      });
+    }
+
     const promoEnabled = parseBoolean(isPromo);
 
+    const configEnabled = parseBoolean(
+      parsedPromoConfig.enabled
+    );
+
     /* ==========================================
-       VALIDAR PROMOCIÓN
+       VALIDAR PRECIO PROMOCIONAL
     ========================================== */
+
+    let numericPromoPrice = null;
+
+    if (promoEnabled) {
+      if (
+        promoPrice === undefined ||
+        promoPrice === ""
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Ingresá un precio promocional"
+        });
+      }
+
+      numericPromoPrice = Number(promoPrice);
+
+      if (
+        !Number.isFinite(numericPromoPrice) ||
+        numericPromoPrice < 0 ||
+        numericPromoPrice >= numericPrice
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "El precio promocional debe ser válido y menor al precio normal"
+        });
+      }
+    }
+
+    if (configEnabled && !promoEnabled) {
+      return res.status(400).json({
+        success: false,
+        message: "Debés activar la promoción para configurar sus componentes"
+      });
+    }
+
+    /* ==========================================
+       VALIDAR Y CONSERVAR CONFIGURACIÓN
+    ========================================== */
+
+    const hasPromoComponents =
+      (parsedPromoConfig.includedProducts || []).length > 0 ||
+      (parsedPromoConfig.selectionGroups || []).length > 0;
 
     let validatedPromoConfig = {
       enabled: false,
@@ -392,36 +462,22 @@ export const createProduct = async (req, res) => {
       selectionGroups: []
     };
 
-    if (parsedPromoConfig.enabled === true) {
+    if (hasPromoComponents) {
+      // Validamos también las configuraciones desactivadas,
+      // para conservarlas correctamente al editar después.
 
-      if (!promoEnabled) {
-        return res.status(400).json({
-          success: false,
-          message: "Debés activar la promoción para configurar un combo"
-        });
-      }
+      validatedPromoConfig = await validatePromoConfig({
+        ...parsedPromoConfig,
+        enabled: true
+      });
 
-      const numericPromoPrice = Number(promoPrice);
-
-      if (
-        promoPrice === undefined ||
-        promoPrice === "" ||
-        !Number.isFinite(numericPromoPrice) ||
-        numericPromoPrice < 0
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Ingresá un precio promocional válido"
-        });
-      }
-
-      validatedPromoConfig = await validatePromoConfig(
-        parsedPromoConfig
-      );
+      // La validación no debe activar automáticamente la promoción.
+      validatedPromoConfig.enabled =
+        configEnabled && promoEnabled;
     }
 
     /* ==========================================
-       IMAGEN MONGODB
+       IMAGEN
     ========================================== */
 
     const image = {
@@ -434,14 +490,13 @@ export const createProduct = async (req, res) => {
     ========================================== */
 
     const product = await Product.create({
-
       title: title.trim(),
 
       description: description || "",
 
       category,
 
-      price: Number(price),
+      price: numericPrice,
 
       cost: Number(cost || 0),
 
@@ -459,35 +514,28 @@ export const createProduct = async (req, res) => {
 
       isPromo: promoEnabled,
 
-      promoPrice:
-        promoEnabled && promoPrice !== undefined && promoPrice !== ""
-          ? Number(promoPrice)
-          : null,
+      promoPrice: promoEnabled
+        ? numericPromoPrice
+        : null,
 
       promoConfig: validatedPromoConfig
-
     });
 
     return res.status(201).json({
       success: true,
+      message: "Producto creado correctamente",
       product
     });
 
   } catch (error) {
-
-    console.error(
-      "Error creando producto:",
-      error
-    );
+    console.error("Error creando producto:", error);
 
     return res.status(400).json({
       success: false,
       message: error.message || "Error creando producto"
     });
-
   }
 };
-
 
 
 /*============================================
@@ -498,9 +546,12 @@ export const createProduct = async (req, res) => {
  * ACTUALIZAR PRODUCTO
 =============================================*/
 
+/*============================================
+ * ACTUALIZAR PRODUCTO
+=============================================*/
+
 export const updateProduct = async (req, res) => {
   try {
-
     const {
       title,
       description,
@@ -537,6 +588,13 @@ export const updateProduct = async (req, res) => {
     ========================================== */
 
     if (title !== undefined) {
+      if (!title.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "El nombre del producto es obligatorio"
+        });
+      }
+
       product.title = title.trim();
     }
 
@@ -549,11 +607,12 @@ export const updateProduct = async (req, res) => {
     }
 
     if (price !== undefined) {
+      const numericPrice = Number(price);
 
       if (
         price === "" ||
-        !Number.isFinite(Number(price)) ||
-        Number(price) < 0
+        !Number.isFinite(numericPrice) ||
+        numericPrice < 0
       ) {
         return res.status(400).json({
           success: false,
@@ -561,15 +620,39 @@ export const updateProduct = async (req, res) => {
         });
       }
 
-      product.price = Number(price);
+      product.price = numericPrice;
     }
 
     if (cost !== undefined) {
-      product.cost = Number(cost);
+      const numericCost = Number(cost);
+
+      if (
+        !Number.isFinite(numericCost) ||
+        numericCost < 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "El costo es inválido"
+        });
+      }
+
+      product.cost = numericCost;
     }
 
     if (stock !== undefined) {
-      product.stock = Number(stock);
+      const numericStock = Number(stock);
+
+      if (
+        !Number.isFinite(numericStock) ||
+        numericStock < 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "El stock es inválido"
+        });
+      }
+
+      product.stock = numericStock;
     }
 
     if (useStock !== undefined) {
@@ -581,7 +664,6 @@ export const updateProduct = async (req, res) => {
     ========================================== */
 
     if (modifiers !== undefined) {
-
       const parsedModifiers = parseJsonField(
         modifiers,
         []
@@ -618,18 +700,14 @@ export const updateProduct = async (req, res) => {
     ========================================== */
 
     if (promoPrice !== undefined) {
-
       if (promoPrice === "") {
-
         product.promoPrice = null;
-
       } else {
-
-        const newPromoPrice = Number(promoPrice);
+        const numericPromoPrice = Number(promoPrice);
 
         if (
-          !Number.isFinite(newPromoPrice) ||
-          newPromoPrice < 0
+          !Number.isFinite(numericPromoPrice) ||
+          numericPromoPrice < 0
         ) {
           return res.status(400).json({
             success: false,
@@ -637,7 +715,7 @@ export const updateProduct = async (req, res) => {
           });
         }
 
-        product.promoPrice = newPromoPrice;
+        product.promoPrice = numericPromoPrice;
       }
     }
 
@@ -646,7 +724,6 @@ export const updateProduct = async (req, res) => {
     ========================================== */
 
     if (promoConfig !== undefined) {
-
       const parsedPromoConfig = parseJsonField(
         promoConfig,
         {}
@@ -654,7 +731,8 @@ export const updateProduct = async (req, res) => {
 
       if (
         !parsedPromoConfig ||
-        typeof parsedPromoConfig !== "object"
+        typeof parsedPromoConfig !== "object" ||
+        Array.isArray(parsedPromoConfig)
       ) {
         return res.status(400).json({
           success: false,
@@ -662,50 +740,82 @@ export const updateProduct = async (req, res) => {
         });
       }
 
-      if (parsedPromoConfig.enabled === true) {
+      const configEnabled = parseBoolean(
+        parsedPromoConfig.enabled
+      );
 
-        if (!product.isPromo) {
-          return res.status(400).json({
-            success: false,
-            message: "Primero debés activar la promoción"
-          });
-        }
+      const includedProducts =
+        parsedPromoConfig.includedProducts || [];
 
-        if (
-          product.promoPrice === null ||
-          product.promoPrice === undefined
-        ) {
-          return res.status(400).json({
-            success: false,
-            message: "Ingresá un precio promocional válido"
-          });
-        }
+      const selectionGroups =
+        parsedPromoConfig.selectionGroups || [];
 
-        product.promoConfig = await validatePromoConfig(
-          parsedPromoConfig,
-          product._id
-        );
-
-      } else {
-
-        product.promoConfig = {
-          enabled: false,
-          includedProducts: [],
-          selectionGroups: []
-        };
+      if (
+        !Array.isArray(includedProducts) ||
+        !Array.isArray(selectionGroups)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Los componentes de la promoción tienen un formato inválido"
+        });
       }
-    }
 
-    // Si se desactiva la promoción,
-    // también desactivamos su configuración de combo.
-    if (!product.isPromo) {
+      if (configEnabled && !product.isPromo) {
+        return res.status(400).json({
+          success: false,
+          message: "Primero debés activar la promoción"
+        });
+      }
 
-      product.promoConfig = {
+      const hasPromoComponents =
+        includedProducts.length > 0 ||
+        selectionGroups.length > 0;
+
+      let validatedPromoConfig = {
         enabled: false,
         includedProducts: [],
         selectionGroups: []
       };
 
+      if (hasPromoComponents) {
+        validatedPromoConfig = await validatePromoConfig(
+          {
+            ...parsedPromoConfig,
+            enabled: true
+          },
+          product._id
+        );
+
+        // Conservamos los componentes aunque la configuración
+        // esté temporalmente desactivada.
+        validatedPromoConfig.enabled =
+          configEnabled && product.isPromo;
+      }
+
+      product.promoConfig = validatedPromoConfig;
+    }
+
+    /* ==========================================
+       VALIDAR PRECIO FINAL DE LA PROMOCIÓN
+    ========================================== */
+
+    if (product.isPromo) {
+      if (
+        product.promoPrice === null ||
+        product.promoPrice === undefined ||
+        !Number.isFinite(Number(product.promoPrice)) ||
+        Number(product.promoPrice) < 0 ||
+        Number(product.promoPrice) >= Number(product.price)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "El precio promocional debe ser válido y menor al precio normal"
+        });
+      }
+    } else {
+      // Desactivamos la promoción, pero conservamos
+      // sus productos incluidos y grupos de selección.
+      product.promoConfig.enabled = false;
       product.promoPrice = null;
     }
 
@@ -715,7 +825,6 @@ export const updateProduct = async (req, res) => {
     ========================================== */
 
     if (req.file) {
-
       product.image = {
         data: req.file.buffer,
         contentType: req.file.mimetype
@@ -730,24 +839,19 @@ export const updateProduct = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      message: "Producto actualizado correctamente",
       product
     });
 
   } catch (error) {
-
-    console.error(
-      "Error actualizando producto:",
-      error
-    );
+    console.error("Error actualizando producto:", error);
 
     return res.status(400).json({
       success: false,
       message: error.message || "Error actualizando producto"
     });
-
   }
 };
-
 
 
 /*============================================
