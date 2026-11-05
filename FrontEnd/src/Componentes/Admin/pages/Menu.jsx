@@ -1,4 +1,3 @@
-
 import {
   useCallback,
   useEffect,
@@ -8,15 +7,20 @@ import {
 } from "react";
 
 import axios from "axios";
-
 import "./Menu.css";
 import { API_URL } from "../../../config/api";
 
 const API = API_URL;
 
 /* =========================================
-   PRODUCTO VACÍO
+   CONFIGURACIONES INICIALES
 ========================================= */
+
+const createEmptyPromoConfig = () => ({
+  enabled: false,
+  includedProducts: [],
+  selectionGroups: [],
+});
 
 const EMPTY_PRODUCT = {
   title: "",
@@ -27,15 +31,11 @@ const EMPTY_PRODUCT = {
   stock: "",
   useStock: false,
   active: true,
-
   featured: false,
   isPromo: false,
   promoPrice: "",
+  promoConfig: createEmptyPromoConfig(),
 };
-
-/* =========================================
-   MODIFICADORES Y OPCIONES
-========================================= */
 
 const EMPTY_MODIFIER = {
   name: "",
@@ -51,12 +51,7 @@ const EMPTY_OPTION = {
   price: "",
 };
 
-/* =========================================
-   COMPONENTE MENU
-========================================= */
-
 const Menu = () => {
-
   /* =========================================
      ESTADOS PRINCIPALES
   ========================================= */
@@ -68,28 +63,20 @@ const Menu = () => {
 
   const [form, setForm] = useState({
     ...EMPTY_PRODUCT,
+    promoConfig: createEmptyPromoConfig(),
   });
 
   const [editingProduct, setEditingProduct] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
 
   /* =========================================
-     ESTADOS DE IMÁGENES
+     IMÁGENES
   ========================================= */
 
-  // Archivo seleccionado desde el dispositivo
   const [selectedImage, setSelectedImage] = useState(null);
-
-  // Vista previa de la imagen
   const [imagePreview, setImagePreview] = useState("");
-
-  // Referencia al input file
   const imageInputRef = useRef(null);
 
-  /*
-   * Liberar las URL temporales creadas para
-   * las vistas previas y evitar fugas de memoria.
-   */
   useEffect(() => {
     return () => {
       if (imagePreview?.startsWith("blob:")) {
@@ -99,15 +86,15 @@ const Menu = () => {
   }, [imagePreview]);
 
   /* =========================================
-     ESTADOS DE MODIFICADORES
+     MODIFICADORES
   ========================================= */
 
   const [selectedProduct, setSelectedProduct] = useState(null);
-
   const [showModifierModal, setShowModifierModal] = useState(false);
 
   const [modifier, setModifier] = useState({
     ...EMPTY_MODIFIER,
+    options: [],
   });
 
   const [option, setOption] = useState({
@@ -115,17 +102,15 @@ const Menu = () => {
   });
 
   /* =========================================
-     ESTADOS DE FILTROS
+     FILTROS
   ========================================= */
 
   const [search, setSearch] = useState("");
-
   const [categoryFilter, setCategoryFilter] = useState("Todas");
-
   const [statusFilter, setStatusFilter] = useState("Todos");
 
   /* =========================================
-     FORMATEAR PRECIOS
+     UTILIDADES
   ========================================= */
 
   const formatPrice = (value) =>
@@ -135,25 +120,24 @@ const Menu = () => {
       maximumFractionDigits: 2,
     }).format(Number(value) || 0);
 
-  /* =========================================
-     OBTENER URL DE IMAGEN LOCAL
-  ========================================= */
-
   const getProductImageUrl = (product) => {
-    /*
-     * El backend utiliza:
-     * .select("-image.data")
-     *
-     * Por eso seguimos recibiendo contentType,
-     * pero no descargamos el Buffer.
-     */
-
-    if (!product?.image?.contentType) {
-      return "";
-    }
+    if (!product?._id || !product?.image?.contentType) return "";
 
     return `${API}/products/${product._id}/image`;
   };
+
+  const normalizeId = (item) => {
+    if (!item) return "";
+
+    if (typeof item === "object") {
+      return String(item._id || item.id || "");
+    }
+
+    return String(item);
+  };
+
+  const getResponseProduct = (response) =>
+    response.data?.product || response.data;
 
   /* =========================================
      CARGAR PRODUCTOS
@@ -164,10 +148,7 @@ const Menu = () => {
       setLoading(true);
       setError("");
 
-      const response = await axios.get(
-        `${API}/products`
-      );
-
+      const response = await axios.get(`${API}/products`);
       const data = response.data;
 
       setProducts(
@@ -177,17 +158,12 @@ const Menu = () => {
             ? data.products
             : []
       );
-
     } catch (err) {
-      console.error(
-        "Error cargando productos:",
-        err
-      );
+      console.error("Error cargando productos:", err);
 
       setError(
         "No se pudieron cargar los productos. Revisá la conexión con el servidor."
       );
-
     } finally {
       setLoading(false);
     }
@@ -198,7 +174,7 @@ const Menu = () => {
   }, [getProducts]);
 
   /* =========================================
-     CATEGORÍAS DISPONIBLES
+     CATEGORÍAS
   ========================================= */
 
   const categories = useMemo(
@@ -214,13 +190,30 @@ const Menu = () => {
   );
 
   /* =========================================
+     PRODUCTOS DISPONIBLES PARA PROMOCIONES
+
+     No permite incluir:
+     - Productos inactivos.
+     - La propia promoción.
+     - Otras promociones.
+  ========================================= */
+
+  const availablePromoProducts = useMemo(() => {
+    return products.filter(
+      (product) =>
+        product.active !== false &&
+        normalizeId(product._id) !==
+        normalizeId(editingProduct?._id) &&
+        product.isPromo !== true
+    );
+  }, [products, editingProduct]);
+
+  /* =========================================
      FILTRAR PRODUCTOS
   ========================================= */
 
   const filteredProducts = useMemo(() => {
-
     return products.filter((product) => {
-
       const searchText = search.trim().toLowerCase();
 
       const matchesSearch =
@@ -241,28 +234,14 @@ const Menu = () => {
 
       const matchesStatus =
         statusFilter === "Todos" ||
-        (
-          statusFilter === "Activos" &&
-          product.active !== false
-        ) ||
-        (
-          statusFilter === "Inactivos" &&
-          product.active === false
-        );
+        (statusFilter === "Activos" &&
+          product.active !== false) ||
+        (statusFilter === "Inactivos" &&
+          product.active === false);
 
-      return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesStatus
-      );
+      return matchesSearch && matchesCategory && matchesStatus;
     });
-
-  }, [
-    products,
-    search,
-    categoryFilter,
-    statusFilter,
-  ]);
+  }, [products, search, categoryFilter, statusFilter]);
 
   /* =========================================
      ESTADÍSTICAS
@@ -303,62 +282,173 @@ const Menu = () => {
   };
 
   /* =========================================
-     SELECCIONAR IMAGEN LOCAL
+     CONFIGURACIÓN DE PROMOCIONES
+  ========================================= */
+
+  const updatePromoConfig = (field, value) => {
+    setForm((previous) => ({
+      ...previous,
+      promoConfig: {
+        ...previous.promoConfig,
+        [field]: value,
+      },
+    }));
+  };
+
+  const updatePromoGroup = (index, field, value) => {
+    setForm((previous) => ({
+      ...previous,
+      promoConfig: {
+        ...previous.promoConfig,
+        selectionGroups:
+          previous.promoConfig.selectionGroups.map(
+            (group, i) =>
+              i === index
+                ? { ...group, [field]: value }
+                : group
+          ),
+      },
+    }));
+  };
+
+  const addPromoGroup = () => {
+    setForm((previous) => ({
+      ...previous,
+      promoConfig: {
+        ...previous.promoConfig,
+        selectionGroups: [
+          ...previous.promoConfig.selectionGroups,
+          {
+            name: "",
+            description: "",
+            requiredQuantity: 1,
+            allowedProducts: [],
+          },
+        ],
+      },
+    }));
+  };
+
+  const removePromoGroup = (index) => {
+    setForm((previous) => ({
+      ...previous,
+      promoConfig: {
+        ...previous.promoConfig,
+        selectionGroups:
+          previous.promoConfig.selectionGroups.filter(
+            (_, i) => i !== index
+          ),
+      },
+    }));
+  };
+
+  const toggleAllowedProduct = (groupIndex, productId) => {
+    setForm((previous) => ({
+      ...previous,
+      promoConfig: {
+        ...previous.promoConfig,
+        selectionGroups:
+          previous.promoConfig.selectionGroups.map(
+            (group, i) => {
+              if (i !== groupIndex) return group;
+
+              const exists = group.allowedProducts.some(
+                (id) => normalizeId(id) === normalizeId(productId)
+              );
+
+              return {
+                ...group,
+                allowedProducts: exists
+                  ? group.allowedProducts.filter(
+                    (id) => normalizeId(id) !== normalizeId(productId)
+                  )
+                  : [...group.allowedProducts, productId],
+              };
+            }
+          ),
+      },
+    }));
+  };
+
+  const toggleIncludedProduct = (productId) => {
+    setForm((previous) => {
+      const exists = previous.promoConfig.includedProducts.some(
+        (item) =>
+          normalizeId(item.product) === normalizeId(productId)
+      );
+
+      return {
+        ...previous,
+        promoConfig: {
+          ...previous.promoConfig,
+          includedProducts: exists
+            ? previous.promoConfig.includedProducts.filter(
+              (item) =>
+                normalizeId(item.product) !== normalizeId(productId)
+            )
+            : [
+              ...previous.promoConfig.includedProducts,
+              {
+                product: productId,
+                quantity: 1,
+              },
+            ],
+        },
+      };
+    });
+  };
+
+  const updateIncludedQuantity = (productId, quantity) => {
+    setForm((previous) => ({
+      ...previous,
+      promoConfig: {
+        ...previous.promoConfig,
+        includedProducts:
+          previous.promoConfig.includedProducts.map((item) =>
+            normalizeId(item.product) === normalizeId(productId)
+              ? {
+                ...item,
+                quantity: quantity === ""
+                  ? ""
+                  : Math.max(1, Number(quantity) || 1),
+              }
+              : item
+          ),
+      },
+    }));
+  };
+
+  /* =========================================
+     IMÁGENES
   ========================================= */
 
   const handleImageChange = (event) => {
-
     const file = event.target.files?.[0];
 
     if (!file) return;
 
-    // Validar formato
     if (!file.type.startsWith("image/")) {
       alert("Seleccioná un archivo de imagen válido.");
-
       event.target.value = "";
       return;
     }
 
-    // Validar tamaño máximo: 5 MB
     if (file.size > 5 * 1024 * 1024) {
       alert("La imagen no puede superar los 5 MB.");
-
       event.target.value = "";
       return;
     }
 
-    // Guardar archivo para enviarlo a MongoDB
     setSelectedImage(file);
-
-    // Crear vista previa temporal
-    const preview = URL.createObjectURL(file);
-
-    setImagePreview(preview);
+    setImagePreview(URL.createObjectURL(file));
   };
 
-  /* =========================================
-     LIMPIAR IMAGEN SELECCIONADA
-  ========================================= */
-
   const clearSelectedImage = () => {
-
     setSelectedImage(null);
 
-    /*
-     * Si estamos editando, volvemos a mostrar
-     * la imagen que ya estaba guardada.
-     *
-     * Si estamos creando, dejamos la vista vacía.
-     */
-
-    if (editingProduct) {
-      setImagePreview(
-        getProductImageUrl(editingProduct)
-      );
-    } else {
-      setImagePreview("");
-    }
+    setImagePreview(
+      editingProduct ? getProductImageUrl(editingProduct) : ""
+    );
 
     if (imageInputRef.current) {
       imageInputRef.current.value = "";
@@ -366,15 +456,15 @@ const Menu = () => {
   };
 
   /* =========================================
-     ABRIR MODAL PARA CREAR PRODUCTO
+     ABRIR MODAL CREAR
   ========================================= */
 
   const openCreateModal = () => {
-
     setEditingProduct(null);
 
     setForm({
       ...EMPTY_PRODUCT,
+      promoConfig: createEmptyPromoConfig(),
     });
 
     setSelectedImage(null);
@@ -388,12 +478,17 @@ const Menu = () => {
   };
 
   /* =========================================
-     ABRIR MODAL PARA EDITAR PRODUCTO
+     ABRIR MODAL EDITAR
+
+     Importante:
+     No inventamos grupos cuando no existen.
+     Conservamos la configuración original.
   ========================================= */
 
   const openEditModal = (product) => {
-
     setEditingProduct(product);
+
+    const savedConfig = product.promoConfig || {};
 
     setForm({
       title: product.title || "",
@@ -407,19 +502,37 @@ const Menu = () => {
       useStock: product.useStock ?? false,
 
       active: product.active !== false,
-
       featured: product.featured ?? false,
+
       isPromo: product.isPromo ?? false,
       promoPrice: product.promoPrice ?? "",
+
+      promoConfig: {
+        enabled: savedConfig.enabled ?? false,
+
+        includedProducts: (
+          savedConfig.includedProducts || []
+        ).map((item) => ({
+          product: normalizeId(item.product),
+          quantity: Number(item.quantity) || 1,
+        })),
+
+        selectionGroups: (
+          savedConfig.selectionGroups || []
+        ).map((group) => ({
+          name: group.name || "",
+          description: group.description || "",
+          requiredQuantity:
+            Number(group.requiredQuantity) || 1,
+          allowedProducts: (
+            group.allowedProducts || []
+          ).map(normalizeId),
+        })),
+      },
     });
 
-    // No se descarga el Buffer de MongoDB
     setSelectedImage(null);
-
-    // Mostrar imagen existente
-    setImagePreview(
-      getProductImageUrl(product)
-    );
+    setImagePreview(getProductImageUrl(product));
 
     if (imageInputRef.current) {
       imageInputRef.current.value = "";
@@ -429,19 +542,18 @@ const Menu = () => {
   };
 
   /* =========================================
-     CERRAR MODAL DE PRODUCTO
+     CERRAR MODAL PRODUCTO
   ========================================= */
 
   const closeProductModal = () => {
-
     if (saving) return;
 
     setShowProductModal(false);
-
     setEditingProduct(null);
 
     setForm({
       ...EMPTY_PRODUCT,
+      promoConfig: createEmptyPromoConfig(),
     });
 
     setSelectedImage(null);
@@ -453,72 +565,173 @@ const Menu = () => {
   };
 
   /* =========================================
-     GUARDAR O ACTUALIZAR PRODUCTO
-     Envía FormData para recibir imágenes
+     VALIDAR PROMOCIONES
+  ========================================= */
+
+  const validatePromoConfig = () => {
+    if (!form.isPromo || !form.promoConfig.enabled) {
+      return true;
+    }
+
+    const groups = form.promoConfig.selectionGroups || [];
+    const included = form.promoConfig.includedProducts || [];
+
+    if (groups.length === 0 && included.length === 0) {
+      alert(
+        "Una promoción configurable debe tener productos incluidos o grupos de selección."
+      );
+      return false;
+    }
+
+    const includedIds = included.map((item) =>
+      normalizeId(item.product)
+    );
+
+    if (includedIds.some((id) => !id)) {
+      alert("Hay productos incluidos sin seleccionar.");
+      return false;
+    }
+
+    if (new Set(includedIds).size !== includedIds.length) {
+      alert("No podés incluir el mismo producto dos veces.");
+      return false;
+    }
+
+    for (const item of included) {
+      if (
+        !Number.isInteger(Number(item.quantity)) ||
+        Number(item.quantity) < 1
+      ) {
+        alert(
+          "Las cantidades de los productos incluidos deben ser mayores a cero."
+        );
+        return false;
+      }
+
+      const productExists = availablePromoProducts.some(
+        (product) =>
+          normalizeId(product._id) === normalizeId(item.product)
+      );
+
+      if (!productExists) {
+        alert(
+          "Uno de los productos incluidos ya no está disponible. Revisá la configuración."
+        );
+        return false;
+      }
+    }
+
+    const groupNames = groups.map((group) =>
+      group.name.trim().toLowerCase()
+    );
+
+    if (new Set(groupNames).size !== groupNames.length) {
+      alert("No puede haber dos grupos con el mismo nombre.");
+      return false;
+    }
+
+    for (const group of groups) {
+      if (!group.name.trim()) {
+        alert("Todos los grupos deben tener un nombre.");
+        return false;
+      }
+
+      if (
+        !Number.isInteger(Number(group.requiredQuantity)) ||
+        Number(group.requiredQuantity) < 1
+      ) {
+        alert(
+          `La cantidad requerida del grupo "${group.name}" debe ser al menos 1.`
+        );
+        return false;
+      }
+
+      if (!group.allowedProducts?.length) {
+        alert(
+          `Seleccioná al menos un producto permitido para "${group.name}".`
+        );
+        return false;
+      }
+
+      const allowedIds = group.allowedProducts.map(normalizeId);
+
+      if (
+        allowedIds.some((id) => !id) ||
+        new Set(allowedIds).size !== allowedIds.length
+      ) {
+        alert(
+          `Hay productos inválidos o repetidos en "${group.name}".`
+        );
+        return false;
+      }
+
+      const unavailable = allowedIds.some(
+        (id) =>
+          !availablePromoProducts.some(
+            (product) => normalizeId(product._id) === id
+          )
+      );
+
+      if (unavailable) {
+        alert(
+          `Uno de los productos permitidos en "${group.name}" ya no está disponible.`
+        );
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  /* =========================================
+     GUARDAR PRODUCTO
   ========================================= */
 
   const saveProduct = async (event) => {
-
     event.preventDefault();
 
-    // Validar campos obligatorios
     if (
       !form.title.trim() ||
       !form.category.trim() ||
       form.price === ""
     ) {
-      alert(
-        "Completá el nombre, la categoría y el precio."
-      );
-
+      alert("Completá el nombre, la categoría y el precio.");
       return;
     }
 
-    // La imagen es obligatoria al crear
     if (!editingProduct && !selectedImage) {
       alert("Seleccioná una imagen para el producto.");
-
       return;
     }
 
     const price = Number(form.price);
-
-    const cost =
-      form.cost === ""
-        ? 0
-        : Number(form.cost);
+    const cost = form.cost === "" ? 0 : Number(form.cost);
 
     const stock = form.useStock
       ? Number(form.stock || 0)
       : 0;
 
-    // Validar números
     if (
       !Number.isFinite(price) ||
       price < 0 ||
       !Number.isFinite(cost) ||
       cost < 0 ||
       !Number.isFinite(stock) ||
-      stock < 0
+      stock < 0 ||
+      (form.useStock && !Number.isInteger(stock))
     ) {
       alert("Ingresá valores numéricos válidos.");
-
       return;
     }
 
-    // Validar precio promocional
     let promoPrice = null;
 
     if (form.isPromo) {
-
       if (
         form.promoPrice === "" ||
         form.promoPrice === null
       ) {
-        alert(
-          "Ingresá el precio promocional del producto."
-        );
-
+        alert("Ingresá el precio promocional del producto.");
         return;
       }
 
@@ -532,150 +745,134 @@ const Menu = () => {
         alert(
           "El precio promocional debe ser válido y menor que el precio normal."
         );
-
         return;
       }
     }
 
+    if (!validatePromoConfig()) return;
+
+    const currentProductId = normalizeId(editingProduct?._id);
+
+    const componentIds = [
+      ...form.promoConfig.includedProducts.map(
+        (item) => normalizeId(item.product)
+      ),
+      ...form.promoConfig.selectionGroups.flatMap(
+        (group) => group.allowedProducts.map(normalizeId)
+      ),
+    ];
+
+    if (
+      form.isPromo &&
+      form.promoConfig.enabled &&
+      currentProductId &&
+      componentIds.includes(currentProductId)
+    ) {
+      alert("Una promoción no puede incluirse a sí misma.");
+      return;
+    }
+
     try {
-
       setSaving(true);
-
-      /* =====================================
-         CREAR FORMDATA
-      ===================================== */
 
       const formData = new FormData();
 
-      // Datos principales
-      formData.append(
-        "title",
-        form.title.trim()
-      );
+      formData.append("title", form.title.trim());
+      formData.append("description", form.description.trim());
+      formData.append("category", form.category.trim());
 
-      formData.append(
-        "description",
-        form.description.trim()
-      );
+      formData.append("price", String(price));
+      formData.append("cost", String(cost));
 
-      formData.append(
-        "category",
-        form.category.trim()
-      );
+      formData.append("stock", String(stock));
+      formData.append("useStock", String(Boolean(form.useStock)));
 
-      // Precios
-      formData.append(
-        "price",
-        String(price)
-      );
+      formData.append("active", String(Boolean(form.active)));
+      formData.append("featured", String(Boolean(form.featured)));
 
-      formData.append(
-        "cost",
-        String(cost)
-      );
-
-      // Stock
-      formData.append(
-        "stock",
-        String(stock)
-      );
-
-      formData.append(
-        "useStock",
-        String(Boolean(form.useStock))
-      );
-
-      // Configuración
-      formData.append(
-        "active",
-        String(Boolean(form.active))
-      );
-
-      formData.append(
-        "featured",
-        String(Boolean(form.featured))
-      );
-
-      // Promociones
-      formData.append(
-        "isPromo",
-        String(Boolean(form.isPromo))
-      );
+      formData.append("isPromo", String(Boolean(form.isPromo)));
 
       formData.append(
         "promoPrice",
-        form.isPromo
-          ? String(promoPrice)
-          : ""
+        form.isPromo ? String(promoPrice) : ""
       );
 
-      // Modificadores existentes
+      // Conservar modificadores existentes.
       formData.append(
         "modifiers",
-        JSON.stringify(
-          editingProduct?.modifiers || []
-        )
+        JSON.stringify(editingProduct?.modifiers || [])
       );
 
-      // Imagen local
-      // En edición es opcional: si no se selecciona
-      // una imagen nueva, se conserva la anterior.
-      if (selectedImage) {
-        formData.append(
-          "image",
-          selectedImage
-        );
-      }
+      // Conservar la configuración aunque se desactive temporalmente.
+      const promoConfig = {
+        enabled: Boolean(form.promoConfig.enabled),
 
-      /* =====================================
-         CREAR O ACTUALIZAR
-      ===================================== */
+        includedProducts: form.promoConfig.includedProducts.map(
+          (item) => ({
+            product: normalizeId(item.product),
+            quantity: Number(item.quantity),
+          })
+        ),
+
+        selectionGroups: form.promoConfig.selectionGroups.map(
+          (group) => ({
+            name: group.name.trim(),
+            description: group.description.trim(),
+            requiredQuantity: Number(group.requiredQuantity),
+            allowedProducts: group.allowedProducts.map(normalizeId),
+          })
+        ),
+      };
+
+      formData.append("promoConfig", JSON.stringify(promoConfig));
+
+      if (selectedImage) {
+        formData.append("image", selectedImage);
+      }
 
       let response;
 
       if (editingProduct) {
-
-        // Actualizar producto
         response = await axios.put(
           `${API}/products/${editingProduct._id}`,
           formData
         );
-
-        const updated =
-          response.data.product || response.data;
-
-        setProducts((previous) =>
-          previous.map((product) =>
-            product._id === editingProduct._id
-              ? updated
-              : product
-          )
-        );
-
       } else {
-
-        // Crear producto
         response = await axios.post(
           `${API}/products`,
           formData
         );
+      }
 
-        const created =
-          response.data.product || response.data;
+      const savedProduct = getResponseProduct(response);
 
+      if (!savedProduct?._id) {
+        throw new Error(
+          "El servidor no devolvió el producto guardado."
+        );
+      }
+
+      if (editingProduct) {
+        setProducts((previous) =>
+          previous.map((product) =>
+            product._id === editingProduct._id
+              ? savedProduct
+              : product
+          )
+        );
+      } else {
         setProducts((previous) => [
+          savedProduct,
           ...previous,
-          created,
         ]);
       }
 
-      // Cerrar y limpiar
       setShowProductModal(false);
-
       setEditingProduct(null);
 
       setForm({
         ...EMPTY_PRODUCT,
+        promoConfig: createEmptyPromoConfig(),
       });
 
       setSelectedImage(null);
@@ -690,19 +887,14 @@ const Menu = () => {
           ? "Producto actualizado correctamente."
           : "Producto creado correctamente."
       );
-
     } catch (err) {
-
-      console.error(
-        "Error guardando producto:",
-        err
-      );
+      console.error("Error guardando producto:", err);
 
       alert(
         err.response?.data?.message ||
+        err.message ||
         "No se pudo guardar el producto."
       );
-
     } finally {
       setSaving(false);
     }
@@ -713,7 +905,6 @@ const Menu = () => {
   ========================================= */
 
   const deleteProduct = async (product) => {
-
     const confirmed = window.confirm(
       `¿Querés eliminar "${product.title}"? Esta acción no se puede deshacer.`
     );
@@ -721,23 +912,13 @@ const Menu = () => {
     if (!confirmed) return;
 
     try {
-
-      await axios.delete(
-        `${API}/products/${product._id}`
-      );
+      await axios.delete(`${API}/products/${product._id}`);
 
       setProducts((previous) =>
-        previous.filter(
-          (item) => item._id !== product._id
-        )
+        previous.filter((item) => item._id !== product._id)
       );
-
     } catch (err) {
-
-      console.error(
-        "Error eliminando producto:",
-        err
-      );
+      console.error("Error eliminando producto:", err);
 
       alert(
         err.response?.data?.message ||
@@ -747,11 +928,10 @@ const Menu = () => {
   };
 
   /* =========================================
-     ABRIR MODAL DE MODIFICADORES
+     MODIFICADORES
   ========================================= */
 
   const openModifierModal = (product) => {
-
     setSelectedProduct(product);
 
     setModifier({
@@ -759,21 +939,13 @@ const Menu = () => {
       options: [],
     });
 
-    setOption({
-      ...EMPTY_OPTION,
-    });
+    setOption({ ...EMPTY_OPTION });
 
     setShowModifierModal(true);
   };
 
-  /* =========================================
-     CERRAR MODAL DE MODIFICADORES
-  ========================================= */
-
   const closeModifierModal = () => {
-
     setShowModifierModal(false);
-
     setSelectedProduct(null);
 
     setModifier({
@@ -781,40 +953,25 @@ const Menu = () => {
       options: [],
     });
 
-    setOption({
-      ...EMPTY_OPTION,
-    });
+    setOption({ ...EMPTY_OPTION });
   };
 
-  /* =========================================
-     AGREGAR OPCIÓN A UN GRUPO
-  ========================================= */
-
   const addOption = () => {
-
     if (!option.label.trim()) {
       alert("Ingresá el nombre de la opción.");
-
       return;
     }
 
     const price =
-      option.price === ""
-        ? 0
-        : Number(option.price);
+      option.price === "" ? 0 : Number(option.price);
 
-    if (
-      !Number.isFinite(price) ||
-      price < 0
-    ) {
+    if (!Number.isFinite(price) || price < 0) {
       alert("Ingresá un precio extra válido.");
-
       return;
     }
 
     setModifier((previous) => ({
       ...previous,
-
       options: [
         ...previous.options,
         {
@@ -825,32 +982,19 @@ const Menu = () => {
       ],
     }));
 
-    setOption({
-      ...EMPTY_OPTION,
-    });
+    setOption({ ...EMPTY_OPTION });
   };
 
-  /* =========================================
-     ELIMINAR OPCIÓN NUEVA
-  ========================================= */
-
   const removeNewOption = (index) => {
-
     setModifier((previous) => ({
       ...previous,
-
       options: previous.options.filter(
         (_, i) => i !== index
       ),
     }));
   };
 
-  /* =========================================
-     GUARDAR MODIFICADORES
-  ========================================= */
-
   const saveModifiers = async (modifiers) => {
-
     if (!selectedProduct) return null;
 
     const response = await axios.put(
@@ -858,8 +1002,7 @@ const Menu = () => {
       { modifiers }
     );
 
-    const updated =
-      response.data.product || response.data;
+    const updated = getResponseProduct(response);
 
     setProducts((previous) =>
       previous.map((product) =>
@@ -874,28 +1017,20 @@ const Menu = () => {
     return updated;
   };
 
-  /* =========================================
-     CREAR GRUPO DE MODIFICADORES
-  ========================================= */
-
   const saveModifier = async (event) => {
-
     event.preventDefault();
 
     if (!modifier.name.trim()) {
       alert("Ingresá el nombre del grupo.");
-
       return;
     }
 
     if (modifier.options.length === 0) {
       alert("Agregá al menos una opción.");
-
       return;
     }
 
     try {
-
       const modifiers = [
         ...(selectedProduct.modifiers || []),
         {
@@ -911,56 +1046,28 @@ const Menu = () => {
         options: [],
       });
 
-      setOption({
-        ...EMPTY_OPTION,
-      });
+      setOption({ ...EMPTY_OPTION });
 
-      alert(
-        "Grupo de opciones guardado correctamente."
-      );
-
+      alert("Grupo de opciones guardado correctamente.");
     } catch (err) {
-
-      console.error(
-        "Error guardando modificador:",
-        err
-      );
-
-      alert(
-        "No se pudo guardar el grupo de opciones."
-      );
+      console.error("Error guardando modificador:", err);
+      alert("No se pudo guardar el grupo de opciones.");
     }
   };
 
-  /* =========================================
-     ELIMINAR GRUPO DE MODIFICADORES
-  ========================================= */
-
   const deleteModifier = async (index) => {
-
-    if (
-      !window.confirm(
-        "¿Eliminar este grupo de opciones?"
-      )
-    ) {
+    if (!window.confirm("¿Eliminar este grupo de opciones?")) {
       return;
     }
 
     try {
-
       const modifiers = (
         selectedProduct.modifiers || []
       ).filter((_, i) => i !== index);
 
       await saveModifiers(modifiers);
-
     } catch (err) {
-
-      console.error(
-        "Error eliminando modificador:",
-        err
-      );
-
+      console.error("Error eliminando modificador:", err);
       alert("No se pudo eliminar el grupo.");
     }
   };
@@ -970,7 +1077,6 @@ const Menu = () => {
   ========================================= */
 
   const hasValidPromoPrice = (product) => {
-
     if (
       !product ||
       product.isPromo !== true ||
@@ -992,19 +1098,10 @@ const Menu = () => {
     );
   };
 
-  /* =========================================
-     RENDERIZADO
-  ========================================= */
-
   return (
     <main className="qg-menu">
 
-      {/* =====================================
-          ENCABEZADO
-      ===================================== */}
-
       <header className="qg-menu__header">
-
         <div>
           <span className="qg-menu__eyebrow">
             QUE GUSTO / ADMINISTRACIÓN
@@ -1026,89 +1123,32 @@ const Menu = () => {
           <span aria-hidden="true">＋</span>
           Nuevo producto
         </button>
-
       </header>
 
-      {/* =====================================
-          ESTADÍSTICAS
-      ===================================== */}
-
-      <section
-        className="qg-menu__stats"
-        aria-label="Resumen de productos"
-      >
-
-        <article className="qg-menu__stat">
-          <span className="qg-menu__stat-icon">
-            ▤
-          </span>
-
-          <div>
-            <span>Total de productos</span>
-            <strong>{stats.total}</strong>
-          </div>
-        </article>
-
-        <article className="qg-menu__stat">
-          <span className="qg-menu__stat-icon qg-menu__stat-icon--green">
-            ✓
-          </span>
-
-          <div>
-            <span>Activos</span>
-            <strong>{stats.active}</strong>
-          </div>
-        </article>
-
-        <article className="qg-menu__stat">
-          <span className="qg-menu__stat-icon qg-menu__stat-icon--orange">
-            ★
-          </span>
-
-          <div>
-            <span>Destacados</span>
-            <strong>{stats.featured}</strong>
-          </div>
-        </article>
-
-        <article className="qg-menu__stat">
-          <span className="qg-menu__stat-icon qg-menu__stat-icon--orange">
-            %
-          </span>
-
-          <div>
-            <span>En promoción</span>
-            <strong>{stats.promos}</strong>
-          </div>
-        </article>
-
-        <article className="qg-menu__stat">
-          <span className="qg-menu__stat-icon qg-menu__stat-icon--gray">
-            ◌
-          </span>
-
-          <div>
-            <span>Inactivos</span>
-            <strong>{stats.inactive}</strong>
-          </div>
-        </article>
-
+      <section className="qg-menu__stats">
+        {[
+          ["▤", "Total de productos", stats.total],
+          ["✓", "Activos", stats.active],
+          ["★", "Destacados", stats.featured],
+          ["%", "En promoción", stats.promos],
+          ["◌", "Inactivos", stats.inactive],
+        ].map(([icon, label, value], index) => (
+          <article className="qg-menu__stat" key={label}>
+            <span className="qg-menu__stat-icon">{icon}</span>
+            <div>
+              <span>{label}</span>
+              <strong>{value}</strong>
+            </div>
+          </article>
+        ))}
       </section>
-
-      {/* =====================================
-          CATÁLOGO
-      ===================================== */}
 
       <section className="qg-menu__catalog">
 
         <div className="qg-menu__catalog-heading">
-
           <div>
             <h2>Catálogo</h2>
-
-            <p>
-              Buscá y administrá los productos del negocio.
-            </p>
+            <p>Buscá y administrá los productos del negocio.</p>
           </div>
 
           <button
@@ -1119,32 +1159,22 @@ const Menu = () => {
           >
             ↻ Actualizar
           </button>
-
         </div>
-
-        {/* FILTROS */}
 
         <div className="qg-menu__filters">
 
           <label className="qg-menu__search">
-
-            <span aria-hidden="true">⌕</span>
-
+            <span>⌕</span>
             <input
               type="search"
               placeholder="Buscar producto, descripción..."
               value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
+              onChange={(event) => setSearch(event.target.value)}
             />
-
           </label>
 
           <label className="qg-menu__filter">
-
             <span>Categoría</span>
-
             <select
               value={categoryFilter}
               onChange={(event) =>
@@ -1152,21 +1182,15 @@ const Menu = () => {
               }
             >
               {categories.map((category) => (
-                <option
-                  key={category}
-                  value={category}
-                >
+                <option key={category} value={category}>
                   {category}
                 </option>
               ))}
             </select>
-
           </label>
 
           <label className="qg-menu__filter">
-
             <span>Estado</span>
-
             <select
               value={statusFilter}
               onChange={(event) =>
@@ -1177,33 +1201,20 @@ const Menu = () => {
               <option value="Activos">Activos</option>
               <option value="Inactivos">Inactivos</option>
             </select>
-
           </label>
 
         </div>
 
-        {/* CARGA, ERROR O CATÁLOGO */}
-
         {loading ? (
-
           <div className="qg-menu__feedback">
-
             <span className="qg-menu__spinner" />
-
             <h3>Cargando menú...</h3>
-
             <p>Estamos buscando tus productos.</p>
-
           </div>
-
         ) : error ? (
-
           <div className="qg-menu__feedback qg-menu__feedback--error">
-
             <h3>No se pudo cargar el menú</h3>
-
             <p>{error}</p>
-
             <button
               type="button"
               className="qg-menu__button qg-menu__button--primary"
@@ -1211,29 +1222,20 @@ const Menu = () => {
             >
               Reintentar
             </button>
-
           </div>
-
         ) : filteredProducts.length === 0 ? (
-
           <div className="qg-menu__feedback">
-
-            <span className="qg-menu__empty-icon">
-              🍽️
-            </span>
-
+            <span className="qg-menu__empty-icon">🍽️</span>
             <h3>
               {products.length === 0
                 ? "Todavía no hay productos"
                 : "No encontramos resultados"}
             </h3>
-
             <p>
               {products.length === 0
                 ? "Creá tu primer producto para comenzar."
                 : "Probá con otra búsqueda o cambiá los filtros."}
             </p>
-
             {products.length === 0 && (
               <button
                 type="button"
@@ -1243,26 +1245,17 @@ const Menu = () => {
                 Crear producto
               </button>
             )}
-
           </div>
-
         ) : (
-
           <div className="qg-menu__grid">
-
             {filteredProducts.map((product) => (
-
               <article
                 className="qg-menu__product"
                 key={product._id}
               >
 
-                {/* IMAGEN Y ETIQUETAS */}
-
                 <div className="qg-menu__product-image">
-
                   {getProductImageUrl(product) ? (
-
                     <img
                       src={getProductImageUrl(product)}
                       alt={product.title}
@@ -1271,25 +1264,19 @@ const Menu = () => {
                         event.currentTarget.style.display = "none";
                       }}
                     />
-
                   ) : (
-
                     <span className="qg-menu__product-placeholder">
                       🍔
                     </span>
-
                   )}
 
                   <span
-                    className={`qg-menu__status ${
-                      product.active === false
+                    className={`qg-menu__status ${product.active === false
                         ? "qg-menu__status--inactive"
                         : "qg-menu__status--active"
-                    }`}
+                      }`}
                   >
-                    {product.active === false
-                      ? "Inactivo"
-                      : "Activo"}
+                    {product.active === false ? "Inactivo" : "Activo"}
                   </span>
 
                   {product.featured && (
@@ -1303,13 +1290,9 @@ const Menu = () => {
                       🏷️ En promoción
                     </span>
                   )}
-
                 </div>
 
-                {/* INFORMACIÓN */}
-
                 <div className="qg-menu__product-body">
-
                   <span className="qg-menu__category">
                     {product.category || "Sin categoría"}
                   </span>
@@ -1321,21 +1304,15 @@ const Menu = () => {
                       "Sin descripción disponible."}
                   </p>
 
-                  {/* PRECIOS */}
-
                   <div className="qg-menu__price">
-
                     {hasValidPromoPrice(product) ? (
-
                       <>
                         <span className="qg-menu__old-price">
                           {formatPrice(product.price)}
                         </span>
-
                         <strong className="qg-menu__promo-price">
                           {formatPrice(product.promoPrice)}
                         </strong>
-
                         <span className="qg-menu__savings">
                           Ahorrás{" "}
                           {formatPrice(
@@ -1344,44 +1321,35 @@ const Menu = () => {
                           )}
                         </span>
                       </>
-
                     ) : (
-
-                      <strong>
-                        {formatPrice(product.price)}
-                      </strong>
-
+                      <strong>{formatPrice(product.price)}</strong>
                     )}
-
                   </div>
-
-                  {/* STOCK */}
 
                   {product.useStock && (
                     <div className="qg-menu__stock">
-
                       <span>Stock disponible</span>
-
                       <strong>
                         {product.stock ?? 0} unidades
                       </strong>
-
                     </div>
                   )}
-
-                  {/* MODIFICADORES */}
 
                   {(product.modifiers || []).length > 0 && (
                     <div className="qg-menu__modifier-summary">
-                      🍟 {product.modifiers.length} grupo(s)
-                      de opciones
+                      🍟 {product.modifiers.length} grupo(s) de opciones
                     </div>
                   )}
 
-                  {/* ACCIONES */}
+                  {product.isPromo &&
+                    product.promoConfig?.enabled && (
+                      <div className="qg-menu__modifier-summary">
+                        🏷️ Promoción configurable ·{" "}
+                        {product.promoConfig.selectionGroups?.length || 0} grupo(s)
+                      </div>
+                    )}
 
                   <div className="qg-menu__actions">
-
                     <button
                       type="button"
                       className="qg-menu__action qg-menu__action--edit"
@@ -1401,33 +1369,22 @@ const Menu = () => {
                     <button
                       type="button"
                       className="qg-menu__action qg-menu__action--delete"
-                      aria-label={`Eliminar ${product.title}`}
-                      title="Eliminar producto"
                       onClick={() => deleteProduct(product)}
+                      aria-label={`Eliminar ${product.title}`}
                     >
                       🗑
                     </button>
-
                   </div>
-
                 </div>
-
               </article>
-
             ))}
-
           </div>
-
         )}
-
       </section>
 
-      {/* =====================================
-          MODAL CREAR / EDITAR PRODUCTO
-      ===================================== */}
+      {/* MODAL PRODUCTO */}
 
       {showProductModal && (
-
         <div
           className="qg-menu__overlay"
           onMouseDown={(event) => {
@@ -1436,7 +1393,6 @@ const Menu = () => {
             }
           }}
         >
-
           <section
             className="qg-menu__modal"
             role="dialog"
@@ -1444,46 +1400,32 @@ const Menu = () => {
             aria-labelledby="qg-product-modal-title"
           >
 
-            {/* ENCABEZADO DEL MODAL */}
-
             <header className="qg-menu__modal-header">
-
               <div>
-
                 <span className="qg-menu__eyebrow">
                   DATOS DEL PRODUCTO
                 </span>
-
                 <h2 id="qg-product-modal-title">
-                  {editingProduct
-                    ? "Editar producto"
-                    : "Nuevo producto"}
+                  {editingProduct ? "Editar producto" : "Nuevo producto"}
                 </h2>
-
               </div>
 
               <button
                 type="button"
                 className="qg-menu__close"
                 onClick={closeProductModal}
-                aria-label="Cerrar"
                 disabled={saving}
               >
                 ×
               </button>
-
             </header>
 
             <form onSubmit={saveProduct}>
 
               <div className="qg-menu__form-grid">
 
-                {/* NOMBRE */}
-
                 <label className="qg-menu__field">
-
                   Nombre *
-
                   <input
                     required
                     value={form.title}
@@ -1492,15 +1434,10 @@ const Menu = () => {
                     }
                     placeholder="Ej. Milanesa con guarnición"
                   />
-
                 </label>
 
-                {/* CATEGORÍA */}
-
                 <label className="qg-menu__field">
-
                   Categoría *
-
                   <input
                     required
                     value={form.category}
@@ -1509,32 +1446,22 @@ const Menu = () => {
                     }
                     placeholder="Ej. Minutas"
                   />
-
                 </label>
 
-                {/* DESCRIPCIÓN */}
-
                 <label className="qg-menu__field qg-menu__field--full">
-
                   Descripción
-
                   <textarea
                     rows="3"
                     value={form.description}
                     onChange={(event) =>
                       updateForm("description", event.target.value)
                     }
-                    placeholder="Ingredientes, acompañamientos y detalles..."
+                    placeholder="Ingredientes y detalles..."
                   />
-
                 </label>
 
-                {/* PRECIO NORMAL */}
-
                 <label className="qg-menu__field">
-
                   Precio de venta *
-
                   <input
                     required
                     type="number"
@@ -1544,17 +1471,11 @@ const Menu = () => {
                     onChange={(event) =>
                       updateForm("price", event.target.value)
                     }
-                    placeholder="Ej. 8500"
                   />
-
                 </label>
 
-                {/* COSTO */}
-
                 <label className="qg-menu__field">
-
                   Costo
-
                   <input
                     type="number"
                     min="0"
@@ -1563,70 +1484,44 @@ const Menu = () => {
                     onChange={(event) =>
                       updateForm("cost", event.target.value)
                     }
-                    placeholder="Ej. 5000"
                   />
-
                 </label>
 
-                {/* =================================
-                    IMAGEN LOCAL
-                ================================= */}
+                {/* IMAGEN */}
 
                 <div className="qg-menu__field qg-menu__field--full">
-
                   <span>Imagen del producto *</span>
 
                   <label className="qg-menu__image-upload">
-
                     <input
                       ref={imageInputRef}
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif"
                       onChange={handleImageChange}
                     />
-
                     <span className="qg-menu__image-upload-icon">
                       📷
                     </span>
-
-                    <strong>
-                      Seleccionar imagen
-                    </strong>
-
-                    <small>
-                      JPG, PNG o WEBP · Máximo 5 MB
-                    </small>
-
+                    <strong>Seleccionar imagen</strong>
+                    <small>JPG, PNG o WEBP · Máximo 5 MB</small>
                   </label>
 
-                  {/* VISTA PREVIA */}
-
                   {imagePreview && (
-
                     <div className="qg-menu__preview">
-
                       <img
                         src={imagePreview}
-                        alt="Vista previa del producto"
+                        alt="Vista previa"
                         onError={(event) => {
                           event.currentTarget.style.display = "none";
                         }}
                       />
 
                       <div className="qg-menu__preview-info">
-
                         <span>
                           {selectedImage
                             ? selectedImage.name
                             : "Imagen actual del producto"}
                         </span>
-
-                        {selectedImage && (
-                          <small>
-                            {(selectedImage.size / 1024 / 1024).toFixed(2)} MB
-                          </small>
-                        )}
-
                       </div>
 
                       <button
@@ -1638,56 +1533,31 @@ const Menu = () => {
                           ? "Cancelar selección"
                           : "Cambiar imagen"}
                       </button>
-
                     </div>
-
                   )}
-
-                  {!imagePreview && (
-                    <small>
-                      {editingProduct
-                        ? "Seleccioná una nueva imagen si querés reemplazar la actual."
-                        : "Es necesario seleccionar una imagen para crear el producto."}
-                    </small>
-                  )}
-
                 </div>
 
               </div>
 
-              {/* =================================
-                  CONFIGURACIÓN DEL PRODUCTO
-              ================================= */}
+              {/* CONFIGURACIÓN GENERAL */}
 
               <div className="qg-menu__settings">
-
                 <h3>Inventario y publicación</h3>
 
-                {/* STOCK */}
-
                 <label className="qg-menu__check">
-
                   <input
                     type="checkbox"
                     checked={form.useStock}
                     onChange={(event) =>
-                      updateForm(
-                        "useStock",
-                        event.target.checked
-                      )
+                      updateForm("useStock", event.target.checked)
                     }
                   />
-
                   <span>Controlar stock</span>
-
                 </label>
 
                 {form.useStock && (
-
                   <label className="qg-menu__field">
-
                     Unidades disponibles
-
                     <input
                       type="number"
                       min="0"
@@ -1697,152 +1567,330 @@ const Menu = () => {
                         updateForm("stock", event.target.value)
                       }
                     />
-
                   </label>
-
                 )}
 
-                {/* ACTIVO */}
-
                 <label className="qg-menu__check">
-
                   <input
                     type="checkbox"
                     checked={form.active}
                     onChange={(event) =>
-                      updateForm(
-                        "active",
-                        event.target.checked
-                      )
+                      updateForm("active", event.target.checked)
                     }
                   />
-
                   <span>Producto activo</span>
-
                 </label>
 
-                {/* DESTACADO */}
-
                 <label className="qg-menu__check">
-
                   <input
                     type="checkbox"
                     checked={form.featured}
                     onChange={(event) =>
-                      updateForm(
-                        "featured",
-                        event.target.checked
-                      )
+                      updateForm("featured", event.target.checked)
                     }
                   />
-
-                  <span>
-                    ★ Destacar producto en la página principal
-                  </span>
-
+                  <span>★ Destacar producto en la página principal</span>
                 </label>
 
                 {/* PROMOCIÓN */}
 
                 <label className="qg-menu__check">
-
                   <input
                     type="checkbox"
                     checked={form.isPromo}
-                    onChange={(event) => {
-
-                      const enabled = event.target.checked;
-
-                      setForm((previous) => ({
-                        ...previous,
-
-                        isPromo: enabled,
-
-                        promoPrice: enabled
-                          ? previous.promoPrice
-                          : "",
-                      }));
-
-                    }}
+                    onChange={(event) =>
+                      updateForm("isPromo", event.target.checked)
+                    }
                   />
-
                   <span>🏷️ Activar promoción</span>
-
                 </label>
 
-                {/* PRECIO PROMOCIONAL */}
-
                 {form.isPromo && (
+                  <>
+                    <label className="qg-menu__field">
+                      Precio promocional *
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.promoPrice}
+                        onChange={(event) =>
+                          updateForm("promoPrice", event.target.value)
+                        }
+                      />
+                      <small>Debe ser menor que el precio normal.</small>
+                    </label>
 
-                  <label className="qg-menu__field">
+                    {/* CONFIGURADOR */}
 
-                    Precio promocional *
+                    <div className="qg-menu__promo-config">
 
-                    <input
-                      required
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={form.promoPrice}
-                      onChange={(event) =>
-                        updateForm(
-                          "promoPrice",
-                          event.target.value
-                        )
-                      }
-                      placeholder="Ej. 7500"
-                    />
+                      <div className="qg-menu__promo-config-header">
+                        <div>
+                          <h3>Configuración de la promoción</h3>
+                          <p>
+                            Definí qué recibe el cliente y qué productos puede elegir.
+                          </p>
+                        </div>
 
-                    <small>
-                      Debe ser menor que el precio normal.
-                    </small>
+                        <label className="qg-menu__check">
+                          <input
+                            type="checkbox"
+                            checked={form.promoConfig.enabled}
+                            onChange={(event) =>
+                              updatePromoConfig(
+                                "enabled",
+                                event.target.checked
+                              )
+                            }
+                          />
+                          <span>Permitir elegir productos</span>
+                        </label>
+                      </div>
 
-                  </label>
+                      {form.promoConfig.enabled && (
+                        <>
+                          {/* PRODUCTOS FIJOS */}
 
+                          <section className="qg-menu__promo-section">
+                            <h4>1. Productos incluidos</h4>
+                            <p>
+                              Se agregan automáticamente a la promoción.
+                            </p>
+
+                            {availablePromoProducts.length === 0 ? (
+                              <small>No hay productos activos disponibles.</small>
+                            ) : (
+                              <div className="qg-menu__promo-product-list">
+                                {availablePromoProducts.map((product) => {
+                                  const included =
+                                    form.promoConfig.includedProducts.find(
+                                      (item) =>
+                                        normalizeId(item.product) ===
+                                        normalizeId(product._id)
+                                    );
+
+                                  return (
+                                    <div
+                                      className="qg-menu__promo-product"
+                                      key={product._id}
+                                    >
+                                      <label>
+                                        <input
+                                          type="checkbox"
+                                          checked={Boolean(included)}
+                                          onChange={() =>
+                                            toggleIncludedProduct(product._id)
+                                          }
+                                        />
+                                        <span>{product.title}</span>
+                                      </label>
+
+                                      {included && (
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          step="1"
+                                          aria-label={`Cantidad de ${product.title}`}
+                                          value={included.quantity}
+                                          onChange={(event) =>
+                                            updateIncludedQuantity(
+                                              product._id,
+                                              event.target.value
+                                            )
+                                          }
+                                        />
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </section>
+
+                          {/* GRUPOS */}
+
+                          <section className="qg-menu__promo-section">
+
+                            <div className="qg-menu__promo-section-heading">
+                              <div>
+                                <h4>2. Productos a elección del cliente</h4>
+                                <p>
+                                  Definí la cantidad y los productos permitidos.
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                className="qg-menu__button qg-menu__button--secondary"
+                                onClick={addPromoGroup}
+                              >
+                                + Agregar grupo
+                              </button>
+                            </div>
+
+                            {form.promoConfig.selectionGroups.map(
+                              (group, index) => (
+                                <article
+                                  className="qg-menu__promo-group"
+                                  key={`promo-group-${index}`}
+                                >
+                                  <div className="qg-menu__promo-group-heading">
+                                    <strong>Grupo {index + 1}</strong>
+
+                                    <button
+                                      type="button"
+                                      className="qg-menu__remove-option"
+                                      onClick={() =>
+                                        removePromoGroup(index)
+                                      }
+                                    >
+                                      Eliminar
+                                    </button>
+                                  </div>
+
+                                  <div className="qg-menu__form-grid">
+
+                                    <label className="qg-menu__field">
+                                      Nombre del grupo *
+                                      <input
+                                        value={group.name}
+                                        onChange={(event) =>
+                                          updatePromoGroup(
+                                            index,
+                                            "name",
+                                            event.target.value
+                                          )
+                                        }
+                                        placeholder="Ej. Elegí tus empanadas"
+                                      />
+                                    </label>
+
+                                    <label className="qg-menu__field">
+                                      Cantidad requerida *
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        value={group.requiredQuantity}
+                                        onChange={(event) =>
+                                          updatePromoGroup(
+                                            index,
+                                            "requiredQuantity",
+                                            event.target.value
+                                          )
+                                        }
+                                      />
+                                    </label>
+
+                                    <label className="qg-menu__field qg-menu__field--full">
+                                      Descripción para el cliente
+                                      <input
+                                        value={group.description}
+                                        onChange={(event) =>
+                                          updatePromoGroup(
+                                            index,
+                                            "description",
+                                            event.target.value
+                                          )
+                                        }
+                                        placeholder="Podés combinar los sabores que quieras."
+                                      />
+                                    </label>
+
+                                  </div>
+
+                                  <div className="qg-menu__promo-allowed">
+                                    <strong>Productos que puede elegir</strong>
+
+                                    <small>
+                                      Seleccioná los sabores permitidos.
+                                    </small>
+
+                                    <div className="qg-menu__promo-product-list">
+                                      {availablePromoProducts.map((product) => (
+                                        <label
+                                          className="qg-menu__promo-product"
+                                          key={product._id}
+                                        >
+                                          <span>
+                                            <input
+                                              type="checkbox"
+                                              checked={group.allowedProducts.some(
+                                                (id) =>
+                                                  normalizeId(id) ===
+                                                  normalizeId(product._id)
+                                              )}
+                                              onChange={() =>
+                                                toggleAllowedProduct(
+                                                  index,
+                                                  product._id
+                                                )
+                                              }
+                                            />
+                                            {product.title}
+                                          </span>
+
+                                          <small>
+                                            {formatPrice(product.price)}
+                                          </small>
+                                        </label>
+                                      ))}
+                                    </div>
+
+                                    <small className="qg-menu__promo-selected-count">
+                                      {group.allowedProducts.length} producto(s) permitido(s)
+                                    </small>
+                                  </div>
+                                </article>
+                              )
+                            )}
+
+                          </section>
+
+                          <div className="qg-menu__promo-help">
+                            <strong>¿Cómo funciona?</strong>
+                            <p>
+                              El cliente podrá combinar los productos permitidos
+                              hasta completar exactamente la cantidad indicada
+                              en cada grupo. Los productos incluidos se agregan
+                              automáticamente.
+                            </p>
+                          </div>
+
+                        </>
+                      )}
+
+                    </div>
+                  </>
                 )}
 
-                {/* RESUMEN DE PROMOCIÓN */}
+                {/* VISTA PREVIA */}
 
                 {form.isPromo &&
                   form.price !== "" &&
                   form.promoPrice !== "" &&
                   Number(form.promoPrice) >= 0 &&
                   Number(form.promoPrice) < Number(form.price) && (
-
                     <div className="qg-menu__promo-preview">
-
                       <span>Vista previa de la oferta</span>
-
                       <div>
-
-                        <del>
-                          {formatPrice(form.price)}
-                        </del>
-
-                        <strong>
-                          {formatPrice(form.promoPrice)}
-                        </strong>
-
+                        <del>{formatPrice(form.price)}</del>
+                        <strong>{formatPrice(form.promoPrice)}</strong>
                       </div>
-
                       <small>
                         Ahorrás{" "}
                         {formatPrice(
-                          Number(form.price) -
-                          Number(form.promoPrice)
+                          Number(form.price) - Number(form.promoPrice)
                         )}
                       </small>
-
                     </div>
-
                   )}
 
               </div>
 
-              {/* BOTONES DEL FORMULARIO */}
-
               <footer className="qg-menu__modal-footer">
-
                 <button
                   type="button"
                   className="qg-menu__button qg-menu__button--secondary"
@@ -1857,27 +1905,18 @@ const Menu = () => {
                   className="qg-menu__button qg-menu__button--primary"
                   disabled={saving}
                 >
-                  {saving
-                    ? "Guardando..."
-                    : "Guardar producto"}
+                  {saving ? "Guardando..." : "Guardar producto"}
                 </button>
-
               </footer>
 
             </form>
-
           </section>
-
         </div>
-
       )}
 
-      {/* =====================================
-          MODAL DE MODIFICADORES
-      ===================================== */}
+      {/* MODAL MODIFICADORES */}
 
       {showModifierModal && selectedProduct && (
-
         <div
           className="qg-menu__overlay"
           onMouseDown={(event) => {
@@ -1886,7 +1925,6 @@ const Menu = () => {
             }
           }}
         >
-
           <section
             className="qg-menu__modal qg-menu__modal--modifiers"
             role="dialog"
@@ -1894,48 +1932,34 @@ const Menu = () => {
             aria-labelledby="qg-modifier-modal-title"
           >
 
-            {/* ENCABEZADO */}
-
             <header className="qg-menu__modal-header">
-
               <div>
-
                 <span className="qg-menu__eyebrow">
                   PERSONALIZACIÓN
                 </span>
-
                 <h2 id="qg-modifier-modal-title">
                   Opciones del producto
                 </h2>
-
                 <p>{selectedProduct.title}</p>
-
               </div>
 
               <button
                 type="button"
                 className="qg-menu__close"
                 onClick={closeModifierModal}
-                aria-label="Cerrar"
               >
                 ×
               </button>
-
             </header>
-
-            {/* CREAR GRUPO */}
 
             <form
               className="qg-menu__modifier-form"
               onSubmit={saveModifier}
             >
-
               <h3>Crear grupo de opciones</h3>
 
               <label className="qg-menu__field">
-
                 Nombre del grupo *
-
                 <input
                   required
                   value={modifier.name}
@@ -1947,52 +1971,30 @@ const Menu = () => {
                   }
                   placeholder="Ej. Elegí tu guarnición"
                 />
-
               </label>
 
               <div className="qg-menu__modifier-settings">
-
-                {/* TIPO */}
-
                 <label className="qg-menu__field">
-
                   Tipo de selección
-
                   <select
                     value={modifier.type}
                     onChange={(event) =>
                       setModifier((previous) => ({
                         ...previous,
-
                         type: event.target.value,
-
                         maxSelect:
                           event.target.value === "single"
                             ? 1
-                            : Math.max(
-                                2,
-                                previous.maxSelect
-                              ),
+                            : Math.max(2, previous.maxSelect),
                       }))
                     }
                   >
-
-                    <option value="single">
-                      Una opción
-                    </option>
-
-                    <option value="multiple">
-                      Varias opciones
-                    </option>
-
+                    <option value="single">Una opción</option>
+                    <option value="multiple">Varias opciones</option>
                   </select>
-
                 </label>
 
-                {/* OBLIGATORIO */}
-
                 <label className="qg-menu__check">
-
                   <input
                     type="checkbox"
                     checked={modifier.required}
@@ -2003,23 +2005,15 @@ const Menu = () => {
                       }))
                     }
                   />
-
                   <span>Selección obligatoria</span>
-
                 </label>
-
               </div>
-
-              {/* AGREGAR OPCIONES */}
 
               <h3>Agregar opciones</h3>
 
               <div className="qg-menu__option-adder">
-
                 <label className="qg-menu__field">
-
                   Nombre
-
                   <input
                     value={option.label}
                     onChange={(event) =>
@@ -2030,13 +2024,10 @@ const Menu = () => {
                     }
                     placeholder="Ej. Papas fritas"
                   />
-
                 </label>
 
                 <label className="qg-menu__field">
-
                   Precio extra
-
                   <input
                     type="number"
                     min="0"
@@ -2050,7 +2041,6 @@ const Menu = () => {
                     }
                     placeholder="0"
                   />
-
                 </label>
 
                 <button
@@ -2060,49 +2050,33 @@ const Menu = () => {
                 >
                   Añadir
                 </button>
-
               </div>
 
-              {/* OPCIONES NUEVAS */}
-
               {modifier.options.length > 0 && (
-
                 <div className="qg-menu__option-list">
-
                   {modifier.options.map((item, index) => (
-
                     <div
                       className="qg-menu__option-row"
                       key={`${item.label}-${index}`}
                     >
-
                       <span>{item.label}</span>
-
                       <div>
-
                         <strong>
                           {item.price > 0
                             ? `+${formatPrice(item.price)}`
                             : "Sin extra"}
                         </strong>
-
                         <button
                           type="button"
                           className="qg-menu__remove-option"
                           onClick={() => removeNewOption(index)}
-                          aria-label={`Quitar ${item.label}`}
                         >
                           ×
                         </button>
-
                       </div>
-
                     </div>
-
                   ))}
-
                 </div>
-
               )}
 
               <button
@@ -2111,92 +2085,59 @@ const Menu = () => {
               >
                 Guardar grupo de opciones
               </button>
-
             </form>
 
-            {/* GRUPOS EXISTENTES */}
-
             <div className="qg-menu__existing-modifiers">
-
               <h3>Grupos existentes</h3>
 
               {(selectedProduct.modifiers || []).length === 0 ? (
-
                 <p className="qg-menu__muted">
                   Este producto todavía no tiene grupos de opciones.
                 </p>
-
               ) : (
-
                 selectedProduct.modifiers.map((group, index) => (
-
                   <article
                     className="qg-menu__existing-group"
                     key={`${group.name}-${index}`}
                   >
-
                     <div className="qg-menu__existing-group-header">
-
                       <div>
-
                         <strong>{group.name}</strong>
-
                         <span>
                           {group.type === "single"
                             ? "Selección única"
                             : "Selección múltiple"}
-
                           {group.required
                             ? " · Obligatorio"
                             : " · Opcional"}
                         </span>
-
                       </div>
 
                       <button
                         type="button"
                         className="qg-menu__remove-option"
                         onClick={() => deleteModifier(index)}
-                        aria-label={`Eliminar grupo ${group.name}`}
                       >
                         🗑
                       </button>
-
                     </div>
 
                     <div className="qg-menu__existing-options">
-
-                      {(group.options || []).map(
-                        (item, optionIndex) => (
-
-                          <span
-                            key={`${item.label}-${optionIndex}`}
-                          >
-
-                            {item.label}
-
-                            {Number(item.price) > 0 &&
-                              ` · +${formatPrice(item.price)}`}
-
-                          </span>
-
-                        )
-                      )}
-
+                      {(group.options || []).map((item, optionIndex) => (
+                        <span key={`${item.label}-${optionIndex}`}>
+                          {item.label}
+                          {Number(item.price) > 0 &&
+                            ` · +${formatPrice(item.price)}`}
+                        </span>
+                      ))}
                     </div>
-
                   </article>
-
                 ))
-
               )}
-
             </div>
 
           </section>
-
         </div>
-
       )}
 
     </main>

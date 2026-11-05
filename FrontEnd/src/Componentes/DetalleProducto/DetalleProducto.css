@@ -1,4 +1,8 @@
 
+/* ==========================================
+   DETALLE DE PRODUCTO
+========================================== */
+
 .qg-detail {
   width: 100%;
   min-height: 70vh;
@@ -104,6 +108,10 @@
   font-weight: 500;
 }
 
+/* ==========================================
+   MODIFICADORES
+========================================== */
+
 .qg-detail__modifiers {
   border-top: 1px solid #e7e0d8;
   padding-top: 22px;
@@ -189,6 +197,216 @@
   color: #d95d39;
 }
 
+/* ==========================================
+   PROMOCIONES CONFIGURABLES
+========================================== */
+
+.qg-detail__promo-section {
+  border-top: 1px solid #e7e0d8;
+  padding-top: 22px;
+  margin-bottom: 25px;
+}
+
+.qg-detail__promo-title {
+  margin-bottom: 18px;
+}
+
+.qg-detail__promo-title h2 {
+  font-size: 19px;
+  margin: 0 0 8px;
+}
+
+.qg-detail__promo-title p {
+  color: #888;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Productos incluidos */
+
+.qg-detail__included-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qg-detail__included-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  background: #fff;
+  border: 1px solid #e8e2da;
+  border-radius: 12px;
+}
+
+.qg-detail__included-item span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.qg-detail__included-item strong {
+  color: #d95d39;
+  font-size: 13px;
+}
+
+/* Grupos de selección */
+
+.qg-detail__promo-group {
+  padding: 18px;
+  margin-bottom: 16px;
+  background: #fff;
+  border: 1px solid #e8e2da;
+  border-radius: 16px;
+}
+
+.qg-detail__promo-group-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.qg-detail__promo-group-heading h3 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.qg-detail__promo-group-heading p {
+  color: #888;
+  font-size: 12px;
+  margin: 5px 0 0;
+  line-height: 1.5;
+}
+
+.qg-detail__promo-group-heading > span {
+  flex-shrink: 0;
+  padding: 7px 11px;
+  color: #d95d39;
+  background: #f8e6df;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.qg-detail__promo-group-heading > span.is-complete {
+  color: #247b50;
+  background: #e5f5eb;
+}
+
+/* Barra de progreso */
+
+.qg-detail__progress {
+  width: 100%;
+  height: 7px;
+  background: #eee7dd;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.qg-detail__progress-bar {
+  height: 100%;
+  background: #d95d39;
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+.qg-detail__remaining {
+  color: #888;
+  font-size: 12px;
+  margin: 9px 0 15px;
+}
+
+/* Productos seleccionables */
+
+.qg-detail__promo-products {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.qg-detail__promo-product {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #faf7f2;
+  border: 1px solid #eee7dd;
+  border-radius: 11px;
+}
+
+.qg-detail__promo-product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.qg-detail__promo-product-info strong {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.qg-detail__promo-product-info small {
+  color: #888;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.qg-detail__promo-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.qg-detail__promo-controls button {
+  width: 31px;
+  height: 31px;
+  border: none;
+  border-radius: 9px;
+  background: #eee0d7;
+  color: #242424;
+  font-size: 19px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.qg-detail__promo-controls button:hover:not(:disabled) {
+  background: #d95d39;
+  color: white;
+}
+
+.qg-detail__promo-controls button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.qg-detail__promo-controls strong {
+  min-width: 15px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.qg-detail__loading,
+.qg-detail__empty {
+  padding: 14px;
+  background: #fff;
+  border-radius: 10px;
+  color: #888;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ==========================================
+   CANTIDAD
+========================================== */
+
 .qg-detail__quantity {
   display: flex;
   align-items: center;
@@ -227,6 +445,10 @@
   min-width: 20px;
   text-align: center;
 }
+
+/* ==========================================
+   RESUMEN Y BOTÓN
+========================================== */
 
 .qg-detail__summary {
   display: flex;
@@ -275,6 +497,10 @@
   margin-top: 13px;
 }
 
+/* ==========================================
+   MENSAJES
+========================================== */
+
 .qg-detail__message {
   max-width: 600px;
   margin: 80px auto;
@@ -299,7 +525,10 @@
   cursor: pointer;
 }
 
-/* Responsive */
+/* ==========================================
+   RESPONSIVE
+========================================== */
+
 @media (max-width: 800px) {
   .qg-detail {
     padding: 25px 5%;
@@ -342,5 +571,17 @@
 
   .qg-detail__option {
     padding: 12px;
+  }
+
+  .qg-detail__promo-group {
+    padding: 13px;
+  }
+
+  .qg-detail__promo-product {
+    padding: 10px;
+  }
+
+  .qg-detail__promo-controls {
+    gap: 8px;
   }
 }
