@@ -4,16 +4,15 @@ const counterSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    trim: true
   },
 
   value: {
     type: Number,
-    default: 0
+    default: 0,
+    min: 0
   }
 });
 
-export default mongoose.model(
-  "Counter",
-  counterSchema
-);
+export default mongoose.model("Counter", counterSchema);

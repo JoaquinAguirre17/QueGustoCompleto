@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 /* ==========================================
@@ -54,7 +55,82 @@ const selectedModifierSchema = new mongoose.Schema(
 
     extraPrice: {
       type: Number,
-      default: 0
+      default: 0,
+      min: 0
+    }
+  },
+  { _id: false }
+);
+
+/* ==========================================
+   PRODUCTOS ELEGIDOS EN UNA PROMOCIÓN
+========================================== */
+
+const promoSelectedProductSchema = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true
+    },
+
+    title: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1
+    }
+  },
+  { _id: false }
+);
+
+/* ==========================================
+   GRUPOS DE SELECCIÓN DE UNA PROMOCIÓN
+========================================== */
+
+const promoSelectionSchema = new mongoose.Schema(
+  {
+    group: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    products: {
+      type: [promoSelectedProductSchema],
+      default: []
+    }
+  },
+  { _id: false }
+);
+
+/* ==========================================
+   PRODUCTOS FIJOS INCLUIDOS EN LA PROMOCIÓN
+========================================== */
+
+const promoIncludedProductSchema = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true
+    },
+
+    title: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1
     }
   },
   { _id: false }
@@ -72,9 +148,11 @@ const orderItemSchema = new mongoose.Schema(
       required: true
     },
 
+    // Nombre histórico del producto.
     title: {
       type: String,
-      required: true
+      required: true,
+      trim: true
     },
 
     quantity: {
@@ -83,9 +161,11 @@ const orderItemSchema = new mongoose.Schema(
       min: 1
     },
 
+    // Precio unitario calculado por el backend.
     unitPrice: {
       type: Number,
-      required: true
+      required: true,
+      min: 0
     },
 
     modifiers: {
@@ -93,9 +173,22 @@ const orderItemSchema = new mongoose.Schema(
       default: []
     },
 
+    // Selecciones variables de la promoción.
+    promoSelections: {
+      type: [promoSelectionSchema],
+      default: []
+    },
+
+    // Productos fijos incluidos en la promoción.
+    includedProducts: {
+      type: [promoIncludedProductSchema],
+      default: []
+    },
+
     subtotal: {
       type: Number,
-      required: true
+      required: true,
+      min: 0
     }
   },
   { _id: false }
@@ -120,8 +213,22 @@ const orderSchema = new mongoose.Schema(
 
     items: {
       type: [orderItemSchema],
-      required: true
+      required: true,
+      validate: {
+        validator: (items) => items.length > 0,
+        message: "El pedido debe contener al menos un producto."
+      }
     },
+
+    /* TIPO DE ENTREGA */
+
+    deliveryType: {
+      type: String,
+      enum: ["retiro", "delivery"],
+      default: "retiro"
+    },
+
+    /* MÉTODO DE PAGO */
 
     paymentMethod: {
       type: String,
@@ -132,6 +239,8 @@ const orderSchema = new mongoose.Schema(
       ],
       default: "Efectivo"
     },
+
+    /* ESTADO DEL PEDIDO */
 
     status: {
       type: String,
@@ -147,9 +256,12 @@ const orderSchema = new mongoose.Schema(
       default: "Pendiente"
     },
 
+    /* TOTAL CALCULADO POR EL BACKEND */
+
     total: {
       type: Number,
-      required: true
+      required: true,
+      min: 0
     }
   },
   {

@@ -52,12 +52,14 @@ const modifierSchema = new mongoose.Schema(
 
     minSelect: {
       type: Number,
-      default: 0
+      default: 0,
+      min: 0
     },
 
     maxSelect: {
       type: Number,
-      default: 1
+      default: 1,
+      min: 1
     },
 
     options: [modifierOptionSchema]
@@ -79,6 +81,90 @@ const imageSchema = new mongoose.Schema(
     contentType: {
       type: String,
       required: true
+    }
+  },
+  { _id: false }
+);
+
+/* =========================
+   PRODUCTOS INCLUIDOS
+   Ejemplo: 1 pizza muzzarella
+========================= */
+
+const includedProductSchema = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true
+    },
+
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1
+    }
+  },
+  { _id: false }
+);
+
+/* =========================
+   GRUPOS DE SELECCIÓN
+   Ejemplo: elegir 6 empanadas
+========================= */
+
+const promoSelectionGroupSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    description: {
+      type: String,
+      default: ""
+    },
+
+    // Cantidad exacta que debe seleccionar el cliente.
+    requiredQuantity: {
+      type: Number,
+      required: true,
+      min: 1
+    },
+
+    // Productos que puede elegir dentro de este grupo.
+    allowedProducts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product"
+      }
+    ]
+  },
+  { _id: false }
+);
+
+/* =========================
+   CONFIGURACIÓN DE PROMOCIÓN
+========================= */
+
+const promoConfigSchema = new mongoose.Schema(
+  {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+
+    // Productos que vienen incluidos obligatoriamente.
+    includedProducts: {
+      type: [includedProductSchema],
+      default: []
+    },
+
+    // Grupos donde el cliente puede elegir productos.
+    selectionGroups: {
+      type: [promoSelectionGroupSchema],
+      default: []
     }
   },
   { _id: false }
@@ -123,7 +209,7 @@ const productSchema = new mongoose.Schema(
       min: 0
     },
 
-    /* IMAGEN ALMACENADA EN MONGODB */
+    /* IMAGEN */
 
     image: {
       type: imageSchema,
@@ -145,7 +231,10 @@ const productSchema = new mongoose.Schema(
 
     /* MODIFICADORES */
 
-    modifiers: [modifierSchema],
+    modifiers: {
+      type: [modifierSchema],
+      default: []
+    },
 
     /* CONFIGURACIÓN */
 
@@ -170,6 +259,16 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: null,
       min: 0
+    },
+
+    // Configuración de combos y promociones.
+    promoConfig: {
+      type: promoConfigSchema,
+      default: () => ({
+        enabled: false,
+        includedProducts: [],
+        selectionGroups: []
+      })
     }
   },
   {
