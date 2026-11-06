@@ -2,8 +2,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { API_URL } from "../../../config/api";
-
-import { useSocket } from "../hooks/useSocket";
+const {
+  newOrder,
+  updatedOrder,
+  soundEnabled,
+  enableSound,
+} = useSocket();
 import OrderCard from "../../OrderCard/OrderCard";
 
 import "./Pedidos.css";
@@ -50,9 +54,9 @@ const Pedidos = () => {
 
     return Number.isFinite(amount)
       ? amount.toLocaleString("es-AR", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2,
-        })
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      })
       : "0";
   };
 
@@ -109,11 +113,10 @@ const Pedidos = () => {
               <div class="print-modifier">
                 • ${escapeHtml(modifier.group || "Extra")}:
                 ${escapeHtml(modifier.option || "")}
-                ${
-                  extraPrice > 0
-                    ? ` (+$${formatMoney(extraPrice)})`
-                    : ""
-                }
+                ${extraPrice > 0
+                ? ` (+$${formatMoney(extraPrice)})`
+                : ""
+              }
               </div>
             `;
           })
@@ -134,11 +137,10 @@ const Pedidos = () => {
               </div>
             </div>
 
-            ${
-              modifiersHTML
-                ? `<div class="print-modifiers">${modifiersHTML}</div>`
-                : ""
-            }
+            ${modifiersHTML
+            ? `<div class="print-modifiers">${modifiersHTML}</div>`
+            : ""
+          }
           </div>
         `;
       })
@@ -616,6 +618,7 @@ const Pedidos = () => {
         </div>
 
         <div className="pedidos-header-actions">
+
           <div className="pedidos-live-indicator">
             <span className="pedidos-live-dot" />
             Tiempo real
@@ -623,12 +626,11 @@ const Pedidos = () => {
 
           <button
             type="button"
-            className="pedidos-refresh-button"
-            onClick={fetchOrders}
-            title="Actualizar pedidos"
-            aria-label="Actualizar pedidos"
+            className="pedidos-sound-button"
+            onClick={enableSound}
+            disabled={soundEnabled}
           >
-            ↻ <span>Actualizar</span>
+            {soundEnabled ? "🔊 Sonido activado" : "🔇 Activar sonido"}
           </button>
         </div>
       </header>
