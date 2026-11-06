@@ -96,12 +96,13 @@ const Pedidos = () => {
   const [updatingOrders, setUpdatingOrders] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const {
-    newOrder,
-    updatedOrder,
-    soundEnabled,
-    enableSound,
-  } = useSocket();
+const {
+  newOrder,
+  updatedOrder,
+  soundEnabled,
+  enableSound,
+  disableSound,
+} = useSocket();
 
   // Evita imprimir dos veces el mismo pedido durante esta sesión.
   const printedOrdersRef = useRef(new Set());
