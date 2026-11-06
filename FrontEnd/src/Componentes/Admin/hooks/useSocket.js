@@ -20,7 +20,7 @@ export const useSocket = () => {
 
       setNewOrder(data);
 
-      const audio = new Audio("/sounds/new.mp3");
+      const audio = new Audio("/sounds/PEDIDODEEMPANADAS.mp3");
 
       audio.play().catch((error) => {
         console.warn("🔇 No se pudo reproducir el sonido:", error);
