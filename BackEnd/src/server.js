@@ -12,6 +12,13 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use("/sounds", express.static(path.join(__dirname, "sounds")));
 
 // ==================================
 // CORS: FRONTEND LOCAL Y PRODUCCIÓN
