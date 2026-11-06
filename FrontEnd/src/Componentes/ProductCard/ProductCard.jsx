@@ -41,9 +41,9 @@ const ProductCard = ({ product }) => {
      VER DETALLE
   ========================= */
 
-  const handleViewDetail = () => {
-    navigate(`/productos/${product._id}`);
-  };
+const handleViewDetail = () => {
+  navigate(`/detalle/${product._id}`);
+};
 
   /* =========================
      INTERFAZ
