@@ -1,10 +1,54 @@
-
-import { createContext, useContext, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
 const CartContext = createContext();
 
 /* ==========================================
-   NORMALIZAR SELECCIONES
+   NORMALIZAR ID
+========================================== */
+
+const getId = (value) => {
+  if (!value) return "";
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return String(value._id || value.id || "");
+};
+
+/* ==========================================
+   NORMALIZAR MODIFICADORES
+========================================== */
+
+const normalizeModifiers = (modifiers = {}) => {
+  if (
+    !modifiers ||
+    typeof modifiers !== "object" ||
+    Array.isArray(modifiers)
+  ) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(modifiers)
+      .map(([group, selected]) => {
+        const normalized = Array.isArray(selected)
+          ? [...selected].map(String).sort()
+          : selected;
+
+        return [group, normalized];
+      })
+      .sort(([a], [b]) => a.localeCompare(b))
+  );
+};
+
+/* ==========================================
+   NORMALIZAR SELECCIONES DE PROMOCIÓN
 ========================================== */
 
 const normalizeSelections = (selections = []) => {
@@ -12,23 +56,50 @@ const normalizeSelections = (selections = []) => {
 
   return selections
     .map((group) => ({
-      group: group.group,
+      group: String(group.group || ""),
 
       products: (group.products || [])
         .map((item) => ({
-          product:
-            typeof item.product === "object"
-              ? item.product?._id || item.product?.id
-              : item.product,
+          product: getId(item.product),
 
           quantity: Number(item.quantity || 0),
         }))
+        .filter(
+          (item) =>
+            item.product &&
+            Number.isInteger(item.quantity) &&
+            item.quantity > 0
+        )
         .sort((a, b) =>
-          String(a.product).localeCompare(String(b.product))
+          a.product.localeCompare(b.product)
         ),
     }))
     .sort((a, b) =>
-      String(a.group).localeCompare(String(b.group))
+      a.group.localeCompare(b.group)
+    );
+};
+
+/* ==========================================
+   NORMALIZAR PRODUCTOS INCLUIDOS
+========================================== */
+
+const normalizeIncludedProducts = (products = []) => {
+  if (!Array.isArray(products)) return [];
+
+  return products
+    .map((item) => ({
+      product: getId(item.product),
+
+      quantity: Number(item.quantity || 0),
+    }))
+    .filter(
+      (item) =>
+        item.product &&
+        Number.isInteger(item.quantity) &&
+        item.quantity > 0
+    )
+    .sort((a, b) =>
+      a.product.localeCompare(b.product)
     );
 };
 
@@ -38,13 +109,30 @@ const normalizeSelections = (selections = []) => {
 
 const sameProduct = (a, b) => {
   return (
-    a._id === b._id &&
+    getId(a._id) === getId(b._id) &&
 
-    JSON.stringify(a.selectedModifiers || {}) ===
-      JSON.stringify(b.selectedModifiers || {}) &&
+    JSON.stringify(
+      normalizeModifiers(a.selectedModifiers)
+    ) ===
+      JSON.stringify(
+        normalizeModifiers(b.selectedModifiers)
+      ) &&
 
-    JSON.stringify(normalizeSelections(a.promoSelections)) ===
-      JSON.stringify(normalizeSelections(b.promoSelections))
+    JSON.stringify(
+      normalizeSelections(a.promoSelections)
+    ) ===
+      JSON.stringify(
+        normalizeSelections(b.promoSelections)
+      ) &&
+
+    JSON.stringify(
+      normalizeIncludedProducts(a.includedProducts)
+    ) ===
+      JSON.stringify(
+        normalizeIncludedProducts(b.includedProducts)
+      ) &&
+
+    Number(a.price || 0) === Number(b.price || 0)
   );
 };
 
@@ -55,10 +143,12 @@ const sameProduct = (a, b) => {
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
 
-  /* AGREGAR PRODUCTO */
+  /* ==========================================
+     AGREGAR PRODUCTO
+  ========================================== */
 
   const addToCart = (product) => {
-    if (!product || !product._id) {
+    if (!product || !getId(product._id)) {
       console.error("Producto inválido");
       return;
     }
@@ -69,7 +159,7 @@ export const CartProvider = ({ children }) => {
     );
 
     setCart((previousCart) => {
-      const exists = previousCart.find((item) =>
+      const exists = previousCart.some((item) =>
         sameProduct(item, product)
       );
 
@@ -78,7 +168,9 @@ export const CartProvider = ({ children }) => {
           sameProduct(item, product)
             ? {
                 ...item,
-                quantity: item.quantity + quantityToAdd,
+                quantity:
+                  Number(item.quantity || 0) +
+                  quantityToAdd,
               }
             : item
         );
@@ -94,7 +186,9 @@ export const CartProvider = ({ children }) => {
     });
   };
 
-  /* ELIMINAR PRODUCTO */
+  /* ==========================================
+     ELIMINAR PRODUCTO
+  ========================================== */
 
   const removeFromCart = (index) => {
     setCart((previousCart) =>
@@ -102,57 +196,106 @@ export const CartProvider = ({ children }) => {
     );
   };
 
-  /* ACTUALIZAR CANTIDAD */
+  /* ==========================================
+     ACTUALIZAR CANTIDAD
+  ========================================== */
 
   const updateQuantity = (index, quantity) => {
     const newQuantity = Number(quantity);
 
-    if (!Number.isInteger(newQuantity) || newQuantity < 1) {
+    if (
+      !Number.isInteger(newQuantity) ||
+      newQuantity < 1
+    ) {
       return;
     }
 
     setCart((previousCart) =>
       previousCart.map((item, i) =>
         i === index
-          ? { ...item, quantity: newQuantity }
+          ? {
+              ...item,
+              quantity: newQuantity,
+            }
           : item
       )
     );
   };
 
-  /* VACIAR CARRITO */
+  /* ==========================================
+     ACTUALIZAR UN PRODUCTO COMPLETO
+     SIN PERDER SU CONFIGURACIÓN
+  ========================================== */
+
+  const updateCartItem = (index, updatedProduct) => {
+    setCart((previousCart) =>
+      previousCart.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              ...updatedProduct,
+              quantity: item.quantity,
+            }
+          : item
+      )
+    );
+  };
+
+  /* ==========================================
+     VACIAR CARRITO
+  ========================================== */
 
   const clearCart = () => {
     setCart([]);
   };
 
-  /* CANTIDAD TOTAL */
+  /* ==========================================
+     CANTIDAD TOTAL
+  ========================================== */
 
-  const cartQuantity = cart.reduce(
-    (total, item) =>
-      total + Number(item.quantity || 0),
-    0
-  );
+  const cartQuantity = useMemo(() => {
+    return cart.reduce(
+      (total, item) =>
+        total + Number(item.quantity || 0),
+      0
+    );
+  }, [cart]);
 
-  /* TOTAL */
+  /* ==========================================
+     TOTAL DEL CARRITO
+  ========================================== */
 
-  const cartTotal = cart.reduce(
-    (total, item) =>
-      total +
-      Number(item.price || 0) *
-        Number(item.quantity || 0),
-    0
-  );
+  const cartTotal = useMemo(() => {
+    return cart.reduce(
+      (total, item) =>
+        total +
+        Number(item.price || 0) *
+          Number(item.quantity || 0),
+      0
+    );
+  }, [cart]);
+
+  /* ==========================================
+     VALORES DEL CONTEXTO
+  ========================================== */
 
   return (
     <CartContext.Provider
       value={{
         cart,
+
         addToCart,
+
         removeFromCart,
+
         updateQuantity,
+
+        updateCartItem,
+
         clearCart,
+
         cartQuantity,
+
         cartTotal,
       }}
     >
@@ -160,5 +303,9 @@ export const CartProvider = ({ children }) => {
     </CartContext.Provider>
   );
 };
+
+/* ==========================================
+   HOOK
+========================================== */
 
 export const useCart = () => useContext(CartContext);

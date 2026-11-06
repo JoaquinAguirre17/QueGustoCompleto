@@ -1272,8 +1272,8 @@ const Menu = () => {
 
                   <span
                     className={`qg-menu__status ${product.active === false
-                        ? "qg-menu__status--inactive"
-                        : "qg-menu__status--active"
+                      ? "qg-menu__status--inactive"
+                      : "qg-menu__status--active"
                       }`}
                   >
                     {product.active === false ? "Inactivo" : "Activo"}
@@ -1768,11 +1768,12 @@ const Menu = () => {
                                     </label>
 
                                     <label className="qg-menu__field">
-                                      Cantidad requerida *
+                                      Cantidad total que debe elegir el cliente *
                                       <input
                                         type="number"
                                         min="1"
                                         step="1"
+                                        required
                                         value={group.requiredQuantity}
                                         onChange={(event) =>
                                           updatePromoGroup(
@@ -1781,7 +1782,12 @@ const Menu = () => {
                                             event.target.value
                                           )
                                         }
+                                        placeholder="Ej. 12"
                                       />
+                                      <small>
+                                        El cliente deberá seleccionar exactamente esta cantidad
+                                        entre los productos permitidos.
+                                      </small>
                                     </label>
 
                                     <label className="qg-menu__field qg-menu__field--full">
