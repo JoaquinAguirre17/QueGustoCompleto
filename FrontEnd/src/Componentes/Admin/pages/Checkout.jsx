@@ -17,8 +17,8 @@ const deliveryDisponible = () => {
   const dia = fecha.getDay();
   const hora = fecha.getHours();
 
-  // Si estamos entre las 00:00 y las 00:59,
-  // corresponde al horario de la noche anterior.
+  // Entre las 00:00 y las 00:59 corresponde
+  // al horario operativo de la noche anterior.
   const diaOperativo =
     hora < 1
       ? dia === 0
@@ -104,6 +104,25 @@ const prepararModificadores = (selectedModifiers = {}) => {
 
 /* ==========================================
    NORMALIZAR PROMOCIONES
+
+   IMPORTANTE:
+   Se conserva packIndex para que el backend
+   pueda identificar a qué promoción pertenece
+   cada grupo de productos seleccionado.
+
+   Ejemplo:
+   [
+     {
+       packIndex: 1,
+       group: "Empanadas",
+       products: [...]
+     },
+     {
+       packIndex: 2,
+       group: "Empanadas",
+       products: [...]
+     }
+   ]
 ========================================== */
 
 const prepararPromociones = (promoSelections = []) => {
@@ -112,7 +131,9 @@ const prepararPromociones = (promoSelections = []) => {
   }
 
   return promoSelections.map((group) => ({
-    group: group.group,
+    packIndex: Number(group.packIndex || 1),
+
+    group: String(group.group || ""),
 
     products: (group.products || []).map((selected) => ({
       product: getProductId(selected.product),
@@ -187,12 +208,41 @@ const Checkout = () => {
         item.promoSelections
       );
 
+      /* ------------------------------------------
+         VALIDAR SELECCIONES DE PROMOCIONES
+      ------------------------------------------ */
+
+      const usedPackGroups = new Set();
+
       for (const group of promoSelections) {
-        if (!group.group || !Array.isArray(group.products)) {
+        if (
+          !group.group ||
+          !Array.isArray(group.products)
+        ) {
           throw new Error(
             `Selección inválida en "${item.title}"`
           );
         }
+
+        if (
+          !Number.isInteger(group.packIndex) ||
+          group.packIndex < 1 ||
+          group.packIndex > quantity
+        ) {
+          throw new Error(
+            `La promoción de "${item.title}" tiene una selección con número inválido.`
+          );
+        }
+
+        const uniqueKey = `${group.packIndex}-${group.group}`;
+
+        if (usedPackGroups.has(uniqueKey)) {
+          throw new Error(
+            `Hay una selección duplicada en la promoción ${group.packIndex} de "${item.title}".`
+          );
+        }
+
+        usedPackGroups.add(uniqueKey);
 
         for (const selected of group.products) {
           if (
@@ -201,7 +251,7 @@ const Checkout = () => {
             selected.quantity < 1
           ) {
             throw new Error(
-              `Revisá las variedades de "${group.group}"`
+              `Revisá las variedades de "${group.group}" en la promoción ${group.packIndex}.`
             );
           }
         }
@@ -335,11 +385,10 @@ const Checkout = () => {
   ========================================== */
 
   const renderIncludedProducts = (item) => {
-    if (!Array.isArray(item.includedProducts)) {
-      return null;
-    }
-
-    if (!item.includedProducts.length) {
+    if (
+      !Array.isArray(item.includedProducts) ||
+      item.includedProducts.length === 0
+    ) {
       return null;
     }
 
@@ -358,42 +407,80 @@ const Checkout = () => {
 
   /* ==========================================
      SELECCIONES DE PROMOCIONES
+
+     Agrupar visualmente por packIndex.
   ========================================== */
 
   const renderPromoSelections = (item) => {
-    if (!Array.isArray(item.promoSelections)) {
+    if (
+      !Array.isArray(item.promoSelections) ||
+      item.promoSelections.length === 0
+    ) {
       return null;
     }
 
-    if (!item.promoSelections.length) {
-      return null;
-    }
+    const packs = {};
 
-    return item.promoSelections.map((group, index) => (
-      <div
-        key={`${group.group}-${index}`}
-        className="checkout-promo-selection"
-      >
-        <strong>🍕 {group.group}</strong>
+    item.promoSelections.forEach((group) => {
+      const packIndex = Number(group.packIndex || 1);
 
-        {(group.products || []).map(
-          (selected, selectedIndex) => {
-            const title =
-              selected.title ||
-              (typeof selected.product === "object"
-                ? selected.product?.title
-                : null) ||
-              "Producto seleccionado";
+      if (!packs[packIndex]) {
+        packs[packIndex] = [];
+      }
 
-            return (
-              <p key={`${title}-${selectedIndex}`}>
-                {selected.quantity} x {title}
-              </p>
-            );
-          }
-        )}
+      packs[packIndex].push(group);
+    });
+
+    return (
+      <div className="checkout-promo-selections">
+
+        {Object.entries(packs)
+          .sort(([a], [b]) => Number(a) - Number(b))
+          .map(([packIndex, groups]) => (
+            <div
+              className="checkout-promo-pack"
+              key={packIndex}
+            >
+
+              <strong>
+                🍕 Promoción {packIndex}
+              </strong>
+
+              {groups.map((group, index) => (
+                <div
+                  key={`${group.group}-${index}`}
+                  className="checkout-promo-selection"
+                >
+
+                  <b>{group.group}</b>
+
+                  {(group.products || []).map(
+                    (selected, selectedIndex) => {
+                      const title =
+                        selected.title ||
+                        (typeof selected.product === "object"
+                          ? selected.product?.title
+                          : null) ||
+                        "Producto seleccionado";
+
+                      return (
+                        <p
+                          key={`${title}-${selectedIndex}`}
+                        >
+                          {selected.quantity} x {title}
+                        </p>
+                      );
+                    }
+                  )}
+
+                </div>
+              ))}
+
+            </div>
+          ))}
+
       </div>
-    ));
+    );
   };
 
   /* ==========================================
@@ -564,6 +651,7 @@ const Checkout = () => {
                 </div>
 
                 <div className="summary-item-price">
+
                   <span>
                     {item.quantity} x {formatPrice(item.price)}
                   </span>
@@ -574,6 +662,7 @@ const Checkout = () => {
                       Number(item.quantity || 0)
                     )}
                   </strong>
+
                 </div>
 
               </article>
@@ -582,9 +671,11 @@ const Checkout = () => {
           )}
 
           <div className="checkout-summary-total">
+
             <span>Total del pedido</span>
 
             <strong>{formatPrice(cartTotal)}</strong>
+
           </div>
 
           <p className="checkout-summary-note">

@@ -1,3 +1,4 @@
+
 import {
   createContext,
   useContext,
@@ -48,7 +49,36 @@ const normalizeModifiers = (modifiers = {}) => {
 };
 
 /* ==========================================
+   OBTENER NOMBRE DEL PRODUCTO
+========================================== */
+
+const getProductTitle = (item) => {
+  if (!item) return "";
+
+  if (typeof item === "string") {
+    return "";
+  }
+
+  return String(
+    item.title ||
+    item.name ||
+    item.product?.title ||
+    item.product?.name ||
+    ""
+  );
+};
+
+/* ==========================================
    NORMALIZAR SELECCIONES DE PROMOCIÓN
+
+   Conservamos:
+   - packIndex
+   - group
+   - product
+   - title
+   - quantity
+
+   Cada pack mantiene sus propias selecciones.
 ========================================== */
 
 const normalizeSelections = (selections = []) => {
@@ -56,11 +86,18 @@ const normalizeSelections = (selections = []) => {
 
   return selections
     .map((group) => ({
+      packIndex: Number(group.packIndex || 1),
+
       group: String(group.group || ""),
 
-      products: (group.products || [])
+      products: (Array.isArray(group.products)
+        ? group.products
+        : []
+      )
         .map((item) => ({
           product: getId(item.product),
+
+          title: getProductTitle(item),
 
           quantity: Number(item.quantity || 0),
         }))
@@ -74,13 +111,20 @@ const normalizeSelections = (selections = []) => {
           a.product.localeCompare(b.product)
         ),
     }))
-    .sort((a, b) =>
-      a.group.localeCompare(b.group)
-    );
+    .sort((a, b) => {
+      if (a.packIndex !== b.packIndex) {
+        return a.packIndex - b.packIndex;
+      }
+
+      return a.group.localeCompare(b.group);
+    });
 };
 
 /* ==========================================
    NORMALIZAR PRODUCTOS INCLUIDOS
+
+   Conservamos el nombre para mostrarlo
+   correctamente en el carrito y checkout.
 ========================================== */
 
 const normalizeIncludedProducts = (products = []) => {
@@ -89,6 +133,8 @@ const normalizeIncludedProducts = (products = []) => {
   return products
     .map((item) => ({
       product: getId(item.product),
+
+      title: getProductTitle(item),
 
       quantity: Number(item.quantity || 0),
     }))
@@ -104,12 +150,27 @@ const normalizeIncludedProducts = (products = []) => {
 };
 
 /* ==========================================
+   IDENTIFICAR PROMOCIONES CONFIGURABLES
+
+   Estas promociones no se fusionan porque
+   cada pack puede tener distintas selecciones.
+========================================== */
+
+const isConfigurablePromo = (product) => {
+  return Boolean(
+    product?.isPromo &&
+    product?.promoConfig?.enabled
+  );
+};
+
+/* ==========================================
    COMPARAR PRODUCTOS
 ========================================== */
 
 const sameProduct = (a, b) => {
   return (
-    getId(a._id) === getId(b._id) &&
+    getId(a._id || a.product) ===
+      getId(b._id || b.product) &&
 
     JSON.stringify(
       normalizeModifiers(a.selectedModifiers)
@@ -145,10 +206,16 @@ export const CartProvider = ({ children }) => {
 
   /* ==========================================
      AGREGAR PRODUCTO
+
+     Las promociones configurables se agregan
+     como líneas independientes.
+
+     Así cada promoción conserva sus propios
+     productos seleccionados.
   ========================================== */
 
   const addToCart = (product) => {
-    if (!product || !getId(product._id)) {
+    if (!product || !getId(product._id || product.product)) {
       console.error("Producto inválido");
       return;
     }
@@ -159,12 +226,35 @@ export const CartProvider = ({ children }) => {
     );
 
     setCart((previousCart) => {
-      const exists = previousCart.some((item) =>
-        sameProduct(item, product)
+      // Promociones configurables.
+      if (isConfigurablePromo(product)) {
+        return [
+          ...previousCart,
+          {
+            ...product,
+            quantity: quantityToAdd,
+
+            promoSelections: normalizeSelections(
+              product.promoSelections
+            ),
+
+            includedProducts: normalizeIncludedProducts(
+              product.includedProducts
+            ),
+          },
+        ];
+      }
+
+      // Productos normales: buscar si ya existen.
+      const exists = previousCart.some(
+        (item) =>
+          !isConfigurablePromo(item) &&
+          sameProduct(item, product)
       );
 
       if (exists) {
         return previousCart.map((item) =>
+          !isConfigurablePromo(item) &&
           sameProduct(item, product)
             ? {
                 ...item,
@@ -198,6 +288,12 @@ export const CartProvider = ({ children }) => {
 
   /* ==========================================
      ACTUALIZAR CANTIDAD
+
+     No permitimos modificar directamente
+     la cantidad de una promoción configurable.
+
+     Para agregar otra, debe configurarse
+     nuevamente desde el detalle.
   ========================================== */
 
   const updateQuantity = (index, quantity) => {
@@ -211,33 +307,57 @@ export const CartProvider = ({ children }) => {
     }
 
     setCart((previousCart) =>
-      previousCart.map((item, i) =>
-        i === index
-          ? {
-              ...item,
-              quantity: newQuantity,
-            }
-          : item
-      )
+      previousCart.map((item, i) => {
+        if (i !== index) return item;
+
+        if (isConfigurablePromo(item)) {
+          return item;
+        }
+
+        return {
+          ...item,
+          quantity: newQuantity,
+        };
+      })
     );
   };
 
   /* ==========================================
      ACTUALIZAR UN PRODUCTO COMPLETO
-     SIN PERDER SU CONFIGURACIÓN
+
+     Conserva las configuraciones anteriores
+     cuando no se envían nuevas selecciones.
   ========================================== */
 
   const updateCartItem = (index, updatedProduct) => {
     setCart((previousCart) =>
-      previousCart.map((item, i) =>
-        i === index
-          ? {
-              ...item,
-              ...updatedProduct,
-              quantity: item.quantity,
-            }
-          : item
-      )
+      previousCart.map((item, i) => {
+        if (i !== index) return item;
+
+        const updated = {
+          ...item,
+          ...updatedProduct,
+          quantity: item.quantity,
+        };
+
+        if (updatedProduct.promoSelections !== undefined) {
+          updated.promoSelections = normalizeSelections(
+            updatedProduct.promoSelections
+          );
+        } else {
+          updated.promoSelections = item.promoSelections || [];
+        }
+
+        if (updatedProduct.includedProducts !== undefined) {
+          updated.includedProducts = normalizeIncludedProducts(
+            updatedProduct.includedProducts
+          );
+        } else {
+          updated.includedProducts = item.includedProducts || [];
+        }
+
+        return updated;
+      })
     );
   };
 
@@ -283,19 +403,12 @@ export const CartProvider = ({ children }) => {
     <CartContext.Provider
       value={{
         cart,
-
         addToCart,
-
         removeFromCart,
-
         updateQuantity,
-
         updateCartItem,
-
         clearCart,
-
         cartQuantity,
-
         cartTotal,
       }}
     >

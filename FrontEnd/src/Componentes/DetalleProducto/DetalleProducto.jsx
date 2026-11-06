@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
@@ -28,7 +29,9 @@ const getProductImage = (product) => {
     return image;
   }
 
-  if (image?.url) return image.url;
+  if (image?.url) {
+    return image.url;
+  }
 
   if (
     image?.source === "mongo" ||
@@ -76,9 +79,13 @@ const getBasePrice = (product) => {
 const getResponseProducts = (data) => {
   if (Array.isArray(data)) return data;
 
-  if (Array.isArray(data?.products)) return data.products;
+  if (Array.isArray(data?.products)) {
+    return data.products;
+  }
 
-  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.data)) {
+    return data.data;
+  }
 
   return [];
 };
@@ -108,21 +115,19 @@ const DetalleProducto = () => {
 
   const [selectedModifiers, setSelectedModifiers] = useState({});
 
-  // Estructura:
+  // Cada índice representa una promoción independiente.
+  // Ejemplo:
   // {
-  //   "Elegí tus empanadas": {
-  //     "ID_CARNE": 5,
-  //     "ID_POLLO": 4,
-  //     "ID_JAMON": 3
-  //   }
+  //   0: { "Empanadas": { idCarne: 2 } },
+  //   1: { "Empanadas": { idPollo: 1, idJyQ: 1 } }
   // }
-
   const [selectedPromoProducts, setSelectedPromoProducts] = useState({});
 
   const [imageError, setImageError] = useState(false);
+  const [added, setAdded] = useState(false);
 
   /* ==========================================
-     CARGAR PRODUCTO
+     CARGAR PRODUCTO INDIVIDUAL
   ========================================== */
 
   useEffect(() => {
@@ -134,10 +139,9 @@ const DetalleProducto = () => {
         setError("");
         setProduct(null);
 
-        const response = await fetch(
-          `${API}/products/${id}`,
-          { signal: controller.signal }
-        );
+        const response = await fetch(`${API}/products/${id}`, {
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
           throw new Error(
@@ -162,12 +166,11 @@ const DetalleProducto = () => {
         }
 
         setProduct(loadedProduct);
-
         setQuantity(1);
         setSelectedModifiers({});
         setSelectedPromoProducts({});
         setImageError(false);
-
+        setAdded(false);
       } catch (err) {
         if (err.name !== "AbortError") {
           console.error("Error cargando detalle:", err);
@@ -183,7 +186,6 @@ const DetalleProducto = () => {
     if (!id) {
       setError("No se recibió el identificador del producto.");
       setLoading(false);
-
       return () => controller.abort();
     }
 
@@ -193,8 +195,7 @@ const DetalleProducto = () => {
   }, [id]);
 
   /* ==========================================
-     CARGAR CATÁLOGO DE PRODUCTOS
-     PARA LAS PROMOCIONES
+     CARGAR CATÁLOGO PARA PROMOCIONES
   ========================================== */
 
   useEffect(() => {
@@ -230,26 +231,24 @@ const DetalleProducto = () => {
 
       try {
         setLoadingCatalog(true);
+        setError("");
 
-        const response = await fetch(
-          `${API}/products`,
-          { signal: controller.signal }
-        );
+        const response = await fetch(`${API}/products`, {
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
           throw new Error(
-            "No se pudieron cargar las variedades de la promoción."
+            "No se pudieron cargar los productos de la promoción."
           );
         }
 
         const data = await response.json();
-
         const products = getResponseProducts(data);
 
         setCatalog(
           products.filter((item) => item.active !== false)
         );
-
       } catch (err) {
         if (err.name !== "AbortError") {
           console.error("Error cargando catálogo:", err);
@@ -262,9 +261,7 @@ const DetalleProducto = () => {
       }
     };
 
-    if (product) {
-      loadCatalog();
-    }
+    loadCatalog();
 
     return () => controller.abort();
   }, [product]);
@@ -354,24 +351,22 @@ const DetalleProducto = () => {
       .map((included) => {
         const productId = getId(included.product);
 
-        const catalogProduct = catalog.find(
-          (item) => getId(item) === productId
-        );
-
-        const populatedProduct =
-          typeof included.product === "object"
-            ? included.product
-            : null;
+        const catalogProduct =
+          catalog.find(
+            (item) => getId(item) === productId
+          ) ||
+          (
+            typeof included.product === "object"
+              ? included.product
+              : null
+          );
 
         return {
           product: productId,
-
           title:
             catalogProduct?.title ||
-            populatedProduct?.title ||
             included.title ||
             "Producto incluido",
-
           quantity: Number(included.quantity || 1),
         };
       })
@@ -386,62 +381,64 @@ const DetalleProducto = () => {
 
   const getAllowedProducts = (group) => {
     const allowedIds = (
-      Array.isArray(group.allowedProducts)
-        ? group.allowedProducts
-        : []
+      group.allowedProducts || []
     )
       .map(getId)
       .filter(Boolean);
 
-    return catalog.filter(
-      (item) =>
-        item.active !== false &&
-        allowedIds.includes(getId(item))
+    return catalog.filter((item) =>
+      allowedIds.includes(getId(item))
     );
   };
 
   /* ==========================================
-     CANTIDAD SELECCIONADA POR GRUPO
+     CONTADORES POR PROMOCIÓN Y GRUPO
   ========================================== */
 
-  const getGroupSelectedQuantity = (group) => {
+  const getGroupSelectedQuantity = (group, packIndex) => {
     const selected =
-      selectedPromoProducts[group.name] || {};
+      selectedPromoProducts[packIndex]?.[group.name] || {};
 
     return Object.values(selected).reduce(
-      (total, value) => total + Number(value || 0),
+      (total, value) =>
+        total + Number(value || 0),
       0
     );
   };
 
-  /* ==========================================
-     CANTIDAD RESTANTE
-  ========================================== */
-
-  const getGroupRemaining = (group) => {
-    const required = Number(group.requiredQuantity || 0);
-
+  const getGroupRemaining = (group, packIndex) => {
     return Math.max(
       0,
-      required - getGroupSelectedQuantity(group)
+      Number(group.requiredQuantity || 0) -
+        getGroupSelectedQuantity(group, packIndex)
     );
   };
 
+  const isPackComplete = (packIndex) => {
+    return promoGroups.every((group) => {
+      return (
+        getGroupSelectedQuantity(group, packIndex) ===
+        Number(group.requiredQuantity || 0)
+      );
+    });
+  };
+
+  const promoComplete = useMemo(() => {
+    if (!isConfigurablePromo) return true;
+
+    return Array.from(
+      { length: quantity },
+      (_, index) => index
+    ).every((packIndex) => isPackComplete(packIndex));
+  }, [
+    isConfigurablePromo,
+    quantity,
+    promoGroups,
+    selectedPromoProducts,
+  ]);
+
   /* ==========================================
-     VALIDAR PROMOCIONES
-  ========================================== */
-
-  const promoComplete = promoGroups.every((group) => {
-    const required = Number(group.requiredQuantity || 0);
-
-    return (
-      required > 0 &&
-      getGroupSelectedQuantity(group) === required
-    );
-  });
-
-  /* ==========================================
-     VALIDAR MODIFICADORES OBLIGATORIOS
+     MODIFICADORES OBLIGATORIOS
   ========================================== */
 
   const missingModifiers = modifiers.some((group) => {
@@ -455,7 +452,9 @@ const DetalleProducto = () => {
 
     const minimum =
       group.type === "multiple"
-        ? Number(group.minSelect ?? (group.required ? 1 : 0))
+        ? Number(
+            group.minSelect ?? (group.required ? 1 : 0)
+          )
         : group.required
           ? 1
           : 0;
@@ -482,7 +481,6 @@ const DetalleProducto = () => {
   ========================================== */
 
   const unitPrice = basePrice + modifiersPrice;
-
   const totalPrice = unitPrice * quantity;
 
   /* ==========================================
@@ -505,14 +503,15 @@ const DetalleProducto = () => {
         let next;
 
         if (checked) {
-          const max = Number(group.maxSelect || Infinity);
+          const max = Number(
+            group.maxSelect || Infinity
+          );
 
           if (current.length >= max) {
             return previous;
           }
 
           next = [...current, optionLabel];
-
         } else {
           next = current.filter(
             (item) => item !== optionLabel
@@ -524,7 +523,6 @@ const DetalleProducto = () => {
         } else {
           delete updated[group.name];
         }
-
       } else {
         if (updated[group.name] === optionLabel) {
           delete updated[group.name];
@@ -535,20 +533,27 @@ const DetalleProducto = () => {
 
       return updated;
     });
+
+    setAdded(false);
   };
 
   /* ==========================================
-     CAMBIAR CANTIDAD DE UNA VARIEDAD
+     CAMBIAR CANTIDAD DE PRODUCTOS DE PROMOCIÓN
   ========================================== */
 
   const handlePromoProductChange = (
+    packIndex,
     group,
     productId,
     difference
   ) => {
     setSelectedPromoProducts((previous) => {
+      const currentPack = {
+        ...(previous[packIndex] || {}),
+      };
+
       const currentGroup = {
-        ...(previous[group.name] || {}),
+        ...(currentPack[group.name] || {}),
       };
 
       const currentQuantity = Number(
@@ -558,7 +563,8 @@ const DetalleProducto = () => {
       const groupSelected = Object.values(
         currentGroup
       ).reduce(
-        (total, value) => total + Number(value || 0),
+        (total, value) =>
+          total + Number(value || 0),
         0
       );
 
@@ -566,12 +572,11 @@ const DetalleProducto = () => {
         group.requiredQuantity || 0
       );
 
-      const nextQuantity = currentQuantity + difference;
+      const nextQuantity =
+        currentQuantity + difference;
 
-      // Nunca permitir cantidades negativas.
       if (nextQuantity < 0) return previous;
 
-      // Nunca superar el total permitido del grupo.
       if (
         difference > 0 &&
         groupSelected >= required
@@ -585,49 +590,62 @@ const DetalleProducto = () => {
         currentGroup[productId] = nextQuantity;
       }
 
+      currentPack[group.name] = currentGroup;
+
       return {
         ...previous,
-        [group.name]: currentGroup,
+        [packIndex]: currentPack,
       };
     });
+
+    setAdded(false);
   };
 
   /* ==========================================
      CONSTRUIR SELECCIONES PARA EL CARRITO
+     SE MANTIENE group + products
   ========================================== */
 
   const buildPromoSelections = () => {
     if (!isConfigurablePromo) return [];
 
-    return promoGroups.map((group) => {
-      const selected =
-        selectedPromoProducts[group.name] || {};
+    const selections = [];
 
-      return {
-        group: group.name,
+    for (let packIndex = 0; packIndex < quantity; packIndex++) {
+      promoGroups.forEach((group) => {
+        const selected =
+          selectedPromoProducts[packIndex]?.[group.name] || {};
 
-        products: Object.entries(selected)
-          .filter(
-            ([, selectedQuantity]) =>
-              Number(selectedQuantity) > 0
-          )
-          .map(([productId, selectedQuantity]) => {
-            const selectedProduct = catalog.find(
-              (item) => getId(item) === productId
-            );
+        selections.push({
+          // Dato adicional para identificar cada promoción.
+          packIndex: packIndex + 1,
 
-            return {
-              product: productId,
+          // Se conservan las propiedades originales.
+          group: group.name,
 
-              title:
-                selectedProduct?.title ||
-                "Producto seleccionado",
+          products: Object.entries(selected)
+            .filter(
+              ([, selectedQuantity]) =>
+                Number(selectedQuantity) > 0
+            )
+            .map(([productId, selectedQuantity]) => {
+              const selectedProduct = catalog.find(
+                (item) => getId(item) === productId
+              );
 
-              quantity: Number(selectedQuantity),
-            };
-          }),
-      };
-    });
+              return {
+                product: productId,
+                title:
+                  selectedProduct?.title ||
+                  "Producto seleccionado",
+                quantity: Number(selectedQuantity),
+              };
+            }),
+        });
+      });
+    }
+
+    return selections;
   };
 
   /* ==========================================
@@ -635,13 +653,20 @@ const DetalleProducto = () => {
   ========================================== */
 
   const handleAddToCart = () => {
-    if (!product || loadingCatalog || missingRequired) {
+    if (
+      !product ||
+      missingRequired ||
+      loadingCatalog
+    ) {
       return;
     }
 
-    if (isConfigurablePromo && !promoComplete) {
+    if (
+      isConfigurablePromo &&
+      !promoComplete
+    ) {
       alert(
-        "Completá todas las cantidades de la promoción."
+        "Completá todas las selecciones de cada promoción."
       );
       return;
     }
@@ -651,9 +676,7 @@ const DetalleProducto = () => {
     addToCart({
       ...product,
 
-      // El precio corresponde al combo completo.
       price: unitPrice,
-
       quantity,
 
       selectedModifiers: {
@@ -667,6 +690,7 @@ const DetalleProducto = () => {
       ),
     });
 
+    setAdded(true);
     navigate("/cart");
   };
 
@@ -789,7 +813,6 @@ const DetalleProducto = () => {
                       key={item.product}
                     >
                       <span>{item.title}</span>
-
                       <strong>
                         x {item.quantity}
                       </strong>
@@ -800,200 +823,209 @@ const DetalleProducto = () => {
               </section>
             )}
 
-          {/* SELECCIÓN DE VARIEDADES */}
+          {/* GRUPOS CONFIGURABLES */}
 
           {isConfigurablePromo &&
             promoGroups.length > 0 && (
               <section className="qg-detail__promo-section">
 
                 <div className="qg-detail__promo-title">
-                  <h2>🍕 Armá tu promoción</h2>
+                  <h2>🍕 Elegí tus productos</h2>
 
                   <p>
-                    Elegí las variedades y cantidades que quieras.
-                    Podés combinarlas libremente hasta completar
-                    la cantidad de la promoción.
+                    Cada promoción se configura por separado.
+                    Podés elegir combinaciones diferentes.
                   </p>
                 </div>
 
                 {loadingCatalog ? (
                   <p className="qg-detail__loading">
-                    Cargando variedades...
+                    Cargando opciones...
                   </p>
                 ) : (
-                  promoGroups.map((group, index) => {
-                    const allowedProducts =
-                      getAllowedProducts(group);
-
-                    const selectedQuantity =
-                      getGroupSelectedQuantity(group);
-
-                    const remaining =
-                      getGroupRemaining(group);
-
-                    const required = Number(
-                      group.requiredQuantity || 0
-                    );
-
-                    const percentage =
-                      required > 0
-                        ? Math.min(
-                            100,
-                            (selectedQuantity / required) * 100
-                          )
-                        : 0;
-
-                    return (
+                  Array.from(
+                    { length: quantity },
+                    (_, packIndex) => (
                       <div
-                        className="qg-detail__promo-group"
-                        key={`${group.name}-${index}`}
+                        className="qg-detail__promo-pack"
+                        key={packIndex}
                       >
 
-                        {/* ENCABEZADO DEL GRUPO */}
-
-                        <div className="qg-detail__promo-group-heading">
-
-                          <div>
-                            <h3>{group.name}</h3>
-
-                            {group.description && (
-                              <p>{group.description}</p>
-                            )}
-                          </div>
+                        <div className="qg-detail__promo-pack-heading">
+                          <h3>
+                            Promoción {packIndex + 1}
+                          </h3>
 
                           <span
                             className={
-                              selectedQuantity === required
+                              isPackComplete(packIndex)
                                 ? "is-complete"
                                 : ""
                             }
                           >
-                            {selectedQuantity}/{required}
+                            {isPackComplete(packIndex)
+                              ? "Completa"
+                              : "Pendiente"}
                           </span>
-
                         </div>
 
-                        {/* PROGRESO */}
+                        {promoGroups.map((group, index) => {
+                          const allowedProducts =
+                            getAllowedProducts(group);
 
-                        <div className="qg-detail__progress">
-                          <div
-                            className="qg-detail__progress-bar"
-                            style={{
-                              width: `${percentage}%`,
-                            }}
-                          />
-                        </div>
+                          const selectedQuantity =
+                            getGroupSelectedQuantity(
+                              group,
+                              packIndex
+                            );
 
-                        <p className="qg-detail__remaining">
-                          {remaining > 0
-                            ? `Te faltan ${remaining} unidad(es) por elegir`
-                            : "¡Completaste este grupo!"}
-                        </p>
+                          const remaining =
+                            getGroupRemaining(
+                              group,
+                              packIndex
+                            );
 
-                        {/* VARIEDADES CONFIGURADAS EN EL ADMIN */}
+                          const required = Number(
+                            group.requiredQuantity || 0
+                          );
 
-                        {allowedProducts.length === 0 ? (
-                          <p className="qg-detail__empty">
-                            No hay variedades disponibles para esta promoción.
-                          </p>
-                        ) : (
-                          <div className="qg-detail__promo-products">
+                          return (
+                            <div
+                              className="qg-detail__promo-group"
+                              key={`${packIndex}-${group.name}-${index}`}
+                            >
 
-                            {allowedProducts.map((option) => {
-                              const optionId = getId(option);
+                              <div className="qg-detail__promo-group-heading">
 
-                              const selected = Number(
-                                selectedPromoProducts[
-                                  group.name
-                                ]?.[optionId] || 0
-                              );
+                                <div>
+                                  <h3>{group.name}</h3>
 
-                              const optionImage =
-                                getProductImage(option);
+                                  {group.description && (
+                                    <p>{group.description}</p>
+                                  )}
+                                </div>
 
-                              return (
-                                <div
-                                  className="qg-detail__promo-product"
-                                  key={optionId}
+                                <span
+                                  className={
+                                    selectedQuantity === required
+                                      ? "is-complete"
+                                      : ""
+                                  }
                                 >
+                                  {selectedQuantity}/{required}
+                                </span>
 
-                                  <div className="qg-detail__promo-product-info">
+                              </div>
 
-                                    {optionImage && (
-                                      <img
-                                        src={optionImage}
-                                        alt={option.title}
-                                        onError={(event) => {
-                                          event.currentTarget.style.display =
-                                            "none";
-                                        }}
-                                      />
-                                    )}
+                              <div className="qg-detail__progress">
+                                <div
+                                  className="qg-detail__progress-bar"
+                                  style={{
+                                    width: `${
+                                      required > 0
+                                        ? Math.min(
+                                            100,
+                                            (selectedQuantity / required) * 100
+                                          )
+                                        : 0
+                                    }%`,
+                                  }}
+                                />
+                              </div>
 
-                                    <div>
-                                      <strong>
-                                        {option.title}
-                                      </strong>
+                              <p className="qg-detail__remaining">
+                                {remaining > 0
+                                  ? `Te faltan ${remaining} unidad(es) por elegir`
+                                  : "¡Grupo completo!"}
+                              </p>
 
-                                      {option.description && (
-                                        <small>
-                                          {option.description}
-                                        </small>
-                                      )}
-                                    </div>
+                              {allowedProducts.length === 0 ? (
+                                <p className="qg-detail__empty">
+                                  No hay productos disponibles para este grupo.
+                                </p>
+                              ) : (
+                                <div className="qg-detail__promo-products">
 
-                                  </div>
+                                  {allowedProducts.map((option) => {
+                                    const optionId = getId(option);
 
-                                  {/* CONTROLES DE CANTIDAD */}
+                                    const selected = Number(
+                                      selectedPromoProducts[
+                                        packIndex
+                                      ]?.[group.name]?.[optionId] || 0
+                                    );
 
-                                  <div className="qg-detail__promo-controls">
+                                    return (
+                                      <div
+                                        className="qg-detail__promo-product"
+                                        key={optionId}
+                                      >
 
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handlePromoProductChange(
-                                          group,
-                                          optionId,
-                                          -1
-                                        )
-                                      }
-                                      disabled={selected <= 0}
-                                      aria-label={`Quitar ${option.title}`}
-                                    >
-                                      −
-                                    </button>
+                                        <div className="qg-detail__promo-product-info">
+                                          <strong>
+                                            {option.title}
+                                          </strong>
 
-                                    <strong>
-                                      {selected}
-                                    </strong>
+                                          {option.description && (
+                                            <small>
+                                              {option.description}
+                                            </small>
+                                          )}
+                                        </div>
 
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handlePromoProductChange(
-                                          group,
-                                          optionId,
-                                          1
-                                        )
-                                      }
-                                      disabled={remaining <= 0}
-                                      aria-label={`Agregar ${option.title}`}
-                                    >
-                                      +
-                                    </button>
+                                        <div className="qg-detail__promo-controls">
 
-                                  </div>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handlePromoProductChange(
+                                                packIndex,
+                                                group,
+                                                optionId,
+                                                -1
+                                              )
+                                            }
+                                            disabled={selected <= 0}
+                                            aria-label={`Quitar ${option.title}`}
+                                          >
+                                            −
+                                          </button>
+
+                                          <strong>
+                                            {selected}
+                                          </strong>
+
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handlePromoProductChange(
+                                                packIndex,
+                                                group,
+                                                optionId,
+                                                1
+                                              )
+                                            }
+                                            disabled={remaining <= 0}
+                                            aria-label={`Agregar ${option.title}`}
+                                          >
+                                            +
+                                          </button>
+
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
 
                                 </div>
-                              );
-                            })}
+                              )}
 
-                          </div>
-                        )}
+                            </div>
+                          );
+                        })}
 
                       </div>
-                    );
-                  })
+                    )
+                  )
                 )}
 
               </section>
@@ -1077,7 +1109,9 @@ const DetalleProducto = () => {
 
                               {Number(option.price) > 0 && (
                                 <strong>
-                                  + {formatPrice(option.price)}
+                                  + {formatPrice(
+                                    Number(option.price)
+                                  )}
                                 </strong>
                               )}
 
@@ -1094,23 +1128,27 @@ const DetalleProducto = () => {
             </div>
           )}
 
-          {/* CANTIDAD DE PROMOCIONES */}
+          {/* CANTIDAD */}
 
           <div className="qg-detail__quantity">
 
-            <span>
-              Cantidad de promociones
-            </span>
+            <span>Cantidad de promociones</span>
 
             <div className="qg-detail__quantity-controls">
 
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
                   setQuantity((value) =>
                     Math.max(1, value - 1)
-                  )
-                }
+                  );
+
+                  setSelectedPromoProducts((previous) => {
+                    const updated = { ...previous };
+                    delete updated[quantity - 1];
+                    return updated;
+                  });
+                }}
                 disabled={quantity <= 1}
               >
                 −
@@ -1120,9 +1158,9 @@ const DetalleProducto = () => {
 
               <button
                 type="button"
-                onClick={() =>
-                  setQuantity((value) => value + 1)
-                }
+                onClick={() => {
+                  setQuantity((value) => value + 1);
+                }}
               >
                 +
               </button>
@@ -1135,9 +1173,7 @@ const DetalleProducto = () => {
 
           <div className="qg-detail__summary">
 
-            <span>
-              Total del producto
-            </span>
+            <span>Total del producto</span>
 
             <strong>
               {formatPrice(totalPrice)}
@@ -1156,9 +1192,9 @@ const DetalleProducto = () => {
             }
           >
             {loadingCatalog
-              ? "Cargando variedades..."
+              ? "Cargando opciones..."
               : missingPromo
-                ? "Completá la promoción"
+                ? "Completá cada promoción"
                 : missingModifiers
                   ? "Completá las opciones obligatorias"
                   : "Agregar al carrito"}
