@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 
 import "./ProductCard.css";
+import DetalleProducto from "../DetalleProducto/DetalleProducto";
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
@@ -195,8 +196,8 @@ const ProductCard = ({ product }) => {
               className="qg-add-btn"
               onClick={handleQuickAdd}
             >
-              <FaShoppingCart />
-              Agregar
+              <DetalleProducto />
+              Ver producto
             </button>
 
           </div>
