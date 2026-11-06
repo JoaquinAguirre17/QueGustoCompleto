@@ -31,9 +31,9 @@ const formatMoney = (value) => {
 
   return Number.isFinite(amount)
     ? amount.toLocaleString("es-AR", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-      })
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })
     : "0";
 };
 
@@ -186,11 +186,10 @@ const Pedidos = () => {
                   ${escapeHtml(option)}
                 </span>
 
-                ${
-                  extraPrice > 0
-                    ? `<strong>+$${formatMoney(extraPrice)}</strong>`
-                    : ""
-                }
+                ${extraPrice > 0
+                ? `<strong>+$${formatMoney(extraPrice)}</strong>`
+                : ""
+              }
               </div>
             `;
           })
@@ -214,22 +213,20 @@ const Pedidos = () => {
               </strong>
             </div>
 
-            ${
-              modifiersHTML
-                ? `<div class="modifiers">${modifiersHTML}</div>`
-                : ""
-            }
+            ${modifiersHTML
+            ? `<div class="modifiers">${modifiersHTML}</div>`
+            : ""
+          }
 
-            ${
-              item.notes || item.observation
-                ? `
+            ${item.notes || item.observation
+            ? `
                   <div class="item-notes">
                     <strong>Observación:</strong>
                     ${escapeHtml(item.notes || item.observation)}
                   </div>
                 `
-                : ""
-            }
+            : ""
+          }
           </article>
         `;
       })
@@ -257,15 +254,15 @@ const Pedidos = () => {
 
     const orderDate = order.createdAt
       ? new Date(order.createdAt).toLocaleString("es-AR", {
-          dateStyle: "short",
-          timeStyle: "short",
-          timeZone: "America/Argentina/Cordoba",
-        })
+        dateStyle: "short",
+        timeStyle: "short",
+        timeZone: "America/Argentina/Cordoba",
+      })
       : new Date().toLocaleString("es-AR", {
-          dateStyle: "short",
-          timeStyle: "short",
-          timeZone: "America/Argentina/Cordoba",
-        });
+        dateStyle: "short",
+        timeStyle: "short",
+        timeZone: "America/Argentina/Cordoba",
+      });
 
     const paymentMethod =
       order.paymentMethod ||
@@ -546,16 +543,15 @@ const Pedidos = () => {
               </div>
             </section>
 
-            ${
-              customer.notes
-                ? `
+            ${customer.notes
+        ? `
                   <div class="order-observations">
                     <strong>Observaciones del cliente:</strong><br />
                     ${escapeHtml(customer.notes)}
                   </div>
                 `
-                : ""
-            }
+        : ""
+      }
 
             <div class="separator"></div>
 
@@ -881,15 +877,10 @@ const Pedidos = () => {
 
           <button
             type="button"
-            className={`pedidos-sound-button ${
-              soundEnabled ? "is-enabled" : ""
-            }`}
-            onClick={enableSound}
-            disabled={soundEnabled}
+            className={`pedidos-sound-button ${soundEnabled ? "active" : ""}`}
+            onClick={soundEnabled ? disableSound : enableSound}
           >
-            {soundEnabled
-              ? "🔊 Sonido activado"
-              : "🔇 Activar sonido"}
+            {soundEnabled ? "🔊 Sonido activado" : "🔇 Activar sonido"}
           </button>
 
           <button

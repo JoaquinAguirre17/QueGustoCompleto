@@ -705,3 +705,35 @@
     transition-duration: 0.01ms !important;
   }
 }
+.pedidos-sound-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border: 1px solid #e85d2a;
+  border-radius: 10px;
+  background: rgba(232, 93, 42, 0.10);
+  color: #e85d2a;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.pedidos-sound-button:hover {
+  background: #e85d2a;
+  color: #fff;
+}
+
+.pedidos-sound-button.active {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.10);
+  color: #16a34a;
+}
+
+.pedidos-sound-button.active:hover {
+  background: #16a34a;
+  color: #fff;
+}

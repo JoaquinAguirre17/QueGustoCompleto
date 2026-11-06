@@ -1,71 +1,108 @@
-
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { SOCKET_URL } from "../../../config/api";
 
-// Conexión única al servidor Socket.IO
+// Conexión única de Socket.IO
 const socket = io(SOCKET_URL, {
   autoConnect: true,
   transports: ["websocket", "polling"],
 });
+
+const AUDIO_PATH = "/sounds/PEDIDODEEMPANADAS.mp3";
+const SOUND_DURATION = 10000;
 
 export const useSocket = () => {
   const [newOrder, setNewOrder] = useState(null);
   const [updatedOrder, setUpdatedOrder] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
 
-  // Reproduce un sonido únicamente si el administrador habilitó el audio
-  const playSound = useCallback((file) => {
-    if (!soundEnabled) return;
+  const audioRef = useRef(null);
+  const stopTimerRef = useRef(null);
 
-    const audio = new Audio(file);
-    audio.volume = 0.8;
+  // Preparar el audio sin reproducirlo
+  useEffect(() => {
+    const audio = new Audio(AUDIO_PATH);
 
-    audio.play().catch((error) => {
-      console.warn("No se pudo reproducir el sonido:", error);
-    });
-  }, [soundEnabled]);
+    audio.loop = true;
+    audio.preload = "auto";
 
-  // Activar sonido desde un botón (requiere interacción del usuario)
-  const enableSound = useCallback(async () => {
-    try {
-      const audio = new Audio("/sounds/PEDIDODEEMPANADAS.mp3");
-      audio.volume = 0.5;
+    audioRef.current = audio;
 
-      // La reproducción comienza dentro de la interacción del usuario.
-      await audio.play();
+    return () => {
+      if (stopTimerRef.current) {
+        clearTimeout(stopTimerRef.current);
+      }
 
-      setSoundEnabled(true);
+      audio.pause();
+      audio.currentTime = 0;
+      audioRef.current = null;
+    };
+  }, []);
 
-      console.log("🔊 Sonidos de pedidos activados");
-      return true;
-    } catch (error) {
-      console.error(
-        "No se pudo activar el sonido. Verificá que exista el archivo MP3:",
-        error
-      );
+  // Activar sonido desde el botón, sin reproducirlo
+  const enableSound = useCallback(() => {
+    setSoundEnabled(true);
+  }, []);
 
-      return false;
+  // Desactivar sonido
+  const disableSound = useCallback(() => {
+    setSoundEnabled(false);
+
+    if (stopTimerRef.current) {
+      clearTimeout(stopTimerRef.current);
+      stopTimerRef.current = null;
+    }
+
+    const audio = audioRef.current;
+
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
     }
   }, []);
 
+  // Reproducir alarma durante 10 segundos
+  const playNewOrderSound = useCallback(async () => {
+    if (!soundEnabled) return;
+
+    const audio = audioRef.current;
+
+    if (!audio) return;
+
+    // Evitar acumular alarmas
+    if (stopTimerRef.current) {
+      clearTimeout(stopTimerRef.current);
+    }
+
+    audio.pause();
+    audio.currentTime = 0;
+
+    try {
+      await audio.play();
+
+      stopTimerRef.current = setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        stopTimerRef.current = null;
+      }, SOUND_DURATION);
+
+    } catch (error) {
+      console.warn("No se pudo reproducir la alarma:", error);
+    }
+  }, [soundEnabled]);
+
   useEffect(() => {
-    // NUEVO PEDIDO
     const handleNewOrder = (data) => {
       console.log("🟢 Socket → Nuevo pedido:", data);
 
       setNewOrder(data);
-
-      playSound("/sounds/PEDIDODEEMPANADAS.mp3");
+      playNewOrderSound();
     };
 
-    // PEDIDO ACTUALIZADO
     const handleOrderUpdated = (data) => {
       console.log("🔄 Socket → Pedido actualizado:", data);
 
       setUpdatedOrder(data);
-
-      playSound("/sounds/QueGustoo.ogg");
     };
 
     socket.on("newOrder", handleNewOrder);
@@ -75,12 +112,13 @@ export const useSocket = () => {
       socket.off("newOrder", handleNewOrder);
       socket.off("orderUpdated", handleOrderUpdated);
     };
-  }, [playSound]);
+  }, [playNewOrderSound]);
 
   return {
     newOrder,
     updatedOrder,
     soundEnabled,
     enableSound,
+    disableSound,
   };
 };
