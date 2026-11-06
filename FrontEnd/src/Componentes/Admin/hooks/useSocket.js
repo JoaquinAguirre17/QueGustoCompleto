@@ -33,7 +33,7 @@ export const useSocket = () => {
 
       setUpdatedOrder(data);
 
-      const audio = new Audio("/sounds/update.mp3");
+      const audio = new Audio("/sounds/QueGustoo.ogg");
 
       audio.play().catch((error) => {
         console.warn("🔇 No se pudo reproducir el sonido:", error);
