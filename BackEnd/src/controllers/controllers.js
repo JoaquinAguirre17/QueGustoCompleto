@@ -1089,7 +1089,6 @@ export const createOrder = async (req, res) => {
       let total = 0;
 
       const productCache = new Map();
-
       const stockRequirements = new Map();
 
       /* ==========================================
@@ -1196,7 +1195,6 @@ export const createOrder = async (req, res) => {
         }
 
         let unitPrice = basePrice;
-
         let selectedModifiers = [];
 
         /* ==========================================
@@ -1216,9 +1214,10 @@ export const createOrder = async (req, res) => {
 
         const validModifierNames = (
           product.modifiers || []
-        ).map((modifier) => modifier.name);
+        )
+          .filter((modifier) => modifier.active !== false)
+          .map((modifier) => modifier.name);
 
-        // No aceptar grupos inexistentes.
         for (const received of receivedModifiers) {
           if (
             !received?.group ||
@@ -1230,6 +1229,8 @@ export const createOrder = async (req, res) => {
         }
 
         for (const modifier of product.modifiers || []) {
+          if (modifier.active === false) continue;
+
           const selected = receivedModifiers.filter(
             (received) => received.group === modifier.name
           );
@@ -1265,8 +1266,6 @@ export const createOrder = async (req, res) => {
             );
           }
 
-          // Evitar que el cliente envíe dos veces
-          // la misma opción.
           const selectedNames = selected.map(
             (choice) => choice.option
           );
@@ -1339,7 +1338,6 @@ export const createOrder = async (req, res) => {
             ? item.promoSelections
             : [];
 
-          // Una promoción no puede estar vacía.
           if (
             configuredGroups.length === 0 &&
             configuredIncluded.length === 0
@@ -1348,10 +1346,6 @@ export const createOrder = async (req, res) => {
               `La promoción "${product.title}" no tiene productos configurados`
             );
           }
-
-          /* ------------------------------------------
-             VALIDAR GRUPOS RECIBIDOS
-          ------------------------------------------ */
 
           if (
             item.promoSelections !== undefined &&
@@ -1362,171 +1356,249 @@ export const createOrder = async (req, res) => {
             );
           }
 
-          if (
-            receivedGroups.length !== configuredGroups.length
-          ) {
-            fail(
-              `Debe completar todos los grupos de "${product.title}"`
-            );
-          }
-
-          const receivedGroupNames = receivedGroups.map(
-            (group) => group?.group
-          );
-
-          // Detectar grupos repetidos.
-          if (
-            new Set(receivedGroupNames).size !==
-            receivedGroupNames.length
-          ) {
-            fail(
-              `Hay grupos repetidos en la promoción "${product.title}"`
-            );
-          }
-
           /* ------------------------------------------
-             VALIDAR CADA GRUPO CONFIGURADO
+             ORGANIZAR GRUPOS POR PACK
           ------------------------------------------ */
 
-          for (const configuredGroup of configuredGroups) {
-            const receivedGroup = receivedGroups.find(
-              (group) =>
-                group.group === configuredGroup.name
-            );
-
-            if (!receivedGroup) {
-              fail(
-                `Falta seleccionar: ${configuredGroup.name}`
-              );
-            }
-
-            const selectedProducts = Array.isArray(
-              receivedGroup.products
-            )
-              ? receivedGroup.products
-              : [];
-
-            const allowedIds = (
-              configuredGroup.allowedProducts || []
-            ).map((id) => String(id));
-
-            let selectedQuantity = 0;
-
-            const quantitiesByProduct = new Map();
-
-            /* ------------------------------------------
-               VALIDAR PRODUCTOS ELEGIDOS
-            ------------------------------------------ */
-
-            for (const selectedProduct of selectedProducts) {
-              const selectedId = String(
-                selectedProduct.product || ""
-              );
-
-              const selectedProductQuantity = Number(
-                selectedProduct.quantity
-              );
-
-              if (
-                !Number.isInteger(selectedProductQuantity) ||
-                selectedProductQuantity < 1
-              ) {
-                fail(
-                  `Cantidad inválida en ${configuredGroup.name}`
-                );
-              }
-
-              if (!allowedIds.includes(selectedId)) {
-                fail(
-                  `El producto seleccionado no está permitido en ${configuredGroup.name}`
-                );
-              }
-
-              const selectedDbProduct = await getProduct(
-                selectedId
-              );
-
-              // Evitar que una promoción se incluya
-              // a sí misma como producto seleccionado.
-              if (
-                String(selectedDbProduct._id) ===
-                String(product._id)
-              ) {
-                fail(
-                  "Una promoción no puede incluirse a sí misma"
-                );
-              }
-
-              selectedQuantity += selectedProductQuantity;
-
-              const previousQuantity =
-                quantitiesByProduct.get(selectedId) || 0;
-
-              quantitiesByProduct.set(
-                selectedId,
-                previousQuantity + selectedProductQuantity
-              );
-
-              addStockRequirement(
-                selectedDbProduct,
-                selectedProductQuantity * quantity
-              );
-            }
-
-            /* ------------------------------------------
-               VALIDAR CANTIDAD EXACTA
-            ------------------------------------------ */
-
-            if (
-              selectedQuantity !==
-              Number(configuredGroup.requiredQuantity)
-            ) {
-              fail(
-                `La promoción "${product.title}" requiere exactamente ${configuredGroup.requiredQuantity} unidades en "${configuredGroup.name}". Seleccionaste ${selectedQuantity}.`
-              );
-            }
-
-            /* ------------------------------------------
-               PREPARAR DATOS HISTÓRICOS
-            ------------------------------------------ */
-
-            const savedProducts = [];
-
-            for (const [
-              selectedId,
-              selectedProductQuantity
-            ] of quantitiesByProduct) {
-              const selectedDbProduct = await getProduct(
-                selectedId
-              );
-
-              savedProducts.push({
-                product: selectedDbProduct._id,
-                title: selectedDbProduct.title,
-                quantity: selectedProductQuantity
-              });
-            }
-
-            promoSelections.push({
-              group: configuredGroup.name,
-              products: savedProducts
-            });
-          }
-
-          /* ------------------------------------------
-             VALIDAR GRUPOS DESCONOCIDOS
-          ------------------------------------------ */
+          const receivedGroupsByPack = new Map();
 
           for (const receivedGroup of receivedGroups) {
-            const exists = configuredGroups.some(
-              (group) =>
-                group.name === receivedGroup.group
+            const packIndex = Number(
+              receivedGroup?.packIndex
             );
 
-            if (!exists) {
+            if (
+              !Number.isInteger(packIndex) ||
+              packIndex < 1 ||
+              packIndex > quantity
+            ) {
+              fail(
+                `Número de promoción inválido en "${product.title}"`
+              );
+            }
+
+            if (
+              !receivedGroup?.group ||
+              typeof receivedGroup.group !== "string"
+            ) {
+              fail(
+                `Se recibió un grupo inválido en "${product.title}"`
+              );
+            }
+
+            const configuredGroupExists =
+              configuredGroups.some(
+                (group) => group.name === receivedGroup.group
+              );
+
+            if (!configuredGroupExists) {
               fail(
                 `Grupo desconocido: ${receivedGroup.group}`
               );
+            }
+
+            if (!receivedGroupsByPack.has(packIndex)) {
+              receivedGroupsByPack.set(
+                packIndex,
+                new Map()
+              );
+            }
+
+            const packGroups =
+              receivedGroupsByPack.get(packIndex);
+
+            if (packGroups.has(receivedGroup.group)) {
+              fail(
+                `El grupo "${receivedGroup.group}" está repetido en la promoción ${packIndex}`
+              );
+            }
+
+            packGroups.set(
+              receivedGroup.group,
+              receivedGroup
+            );
+          }
+
+          /* ------------------------------------------
+             VALIDAR CANTIDAD DE GRUPOS POR PACK
+          ------------------------------------------ */
+
+          for (
+            let packIndex = 1;
+            packIndex <= quantity;
+            packIndex++
+          ) {
+            const packGroups =
+              receivedGroupsByPack.get(packIndex);
+
+            if (
+              configuredGroups.length > 0 &&
+              (!packGroups ||
+                packGroups.size !== configuredGroups.length)
+            ) {
+              fail(
+                `Debe completar todos los grupos de la promoción ${packIndex} de "${product.title}"`
+              );
+            }
+          }
+
+          /* ------------------------------------------
+             VALIDAR CADA PACK Y SUS GRUPOS
+          ------------------------------------------ */
+
+          for (
+            let packIndex = 1;
+            packIndex <= quantity;
+            packIndex++
+          ) {
+            const packGroups =
+              receivedGroupsByPack.get(packIndex) ||
+              new Map();
+
+            for (const configuredGroup of configuredGroups) {
+              const receivedGroup = packGroups.get(
+                configuredGroup.name
+              );
+
+              if (!receivedGroup) {
+                fail(
+                  `Falta seleccionar "${configuredGroup.name}" en la promoción ${packIndex}`
+                );
+              }
+
+              const selectedProducts = Array.isArray(
+                receivedGroup.products
+              )
+                ? receivedGroup.products
+                : [];
+
+              const allowedIds = (
+                configuredGroup.allowedProducts || []
+              ).map((id) => String(id));
+
+              let selectedQuantity = 0;
+
+              const quantitiesByProduct = new Map();
+
+              /* --------------------------------------
+                 VALIDAR PRODUCTOS ELEGIDOS
+              -------------------------------------- */
+
+              for (const selectedProduct of selectedProducts) {
+                const selectedId = String(
+                  selectedProduct.product || ""
+                );
+
+                const selectedProductQuantity = Number(
+                  selectedProduct.quantity
+                );
+
+                if (
+                  !mongoose.Types.ObjectId.isValid(selectedId)
+                ) {
+                  fail(
+                    `Producto inválido en ${configuredGroup.name}`
+                  );
+                }
+
+                if (
+                  !Number.isInteger(selectedProductQuantity) ||
+                  selectedProductQuantity < 1
+                ) {
+                  fail(
+                    `Cantidad inválida en ${configuredGroup.name}`
+                  );
+                }
+
+                if (!allowedIds.includes(selectedId)) {
+                  fail(
+                    `El producto seleccionado no está permitido en ${configuredGroup.name}`
+                  );
+                }
+
+                const selectedDbProduct = await getProduct(
+                  selectedId
+                );
+
+                if (
+                  String(selectedDbProduct._id) ===
+                  String(product._id)
+                ) {
+                  fail(
+                    "Una promoción no puede incluirse a sí misma"
+                  );
+                }
+
+                selectedQuantity += selectedProductQuantity;
+
+                const previousQuantity =
+                  quantitiesByProduct.get(selectedId) || 0;
+
+                quantitiesByProduct.set(
+                  selectedId,
+                  previousQuantity + selectedProductQuantity
+                );
+
+                // IMPORTANTE:
+                // Cada selección ya corresponde a un pack concreto.
+                // No multiplicar nuevamente por item.quantity.
+                addStockRequirement(
+                  selectedDbProduct,
+                  selectedProductQuantity
+                );
+              }
+
+              /* --------------------------------------
+                 VALIDAR CANTIDAD EXACTA DEL GRUPO
+              -------------------------------------- */
+
+              const requiredQuantity = Number(
+                configuredGroup.requiredQuantity
+              );
+
+              if (
+                !Number.isInteger(requiredQuantity) ||
+                requiredQuantity < 0
+              ) {
+                fail(
+                  `La configuración de "${configuredGroup.name}" no es válida`
+                );
+              }
+
+              if (
+                selectedQuantity !== requiredQuantity
+              ) {
+                fail(
+                  `La promoción "${product.title}", pack ${packIndex}, requiere exactamente ${requiredQuantity} unidades en "${configuredGroup.name}". Seleccionaste ${selectedQuantity}.`
+                );
+              }
+
+              /* --------------------------------------
+                 PREPARAR DATOS HISTÓRICOS
+              -------------------------------------- */
+
+              const savedProducts = [];
+
+              for (const [
+                selectedId,
+                selectedProductQuantity
+              ] of quantitiesByProduct) {
+                const selectedDbProduct = await getProduct(
+                  selectedId
+                );
+
+                savedProducts.push({
+                  product: selectedDbProduct._id,
+                  title: selectedDbProduct.title,
+                  quantity: selectedProductQuantity
+                });
+              }
+
+              promoSelections.push({
+                packIndex,
+                group: configuredGroup.name,
+                products: savedProducts
+              });
             }
           }
 
@@ -1567,6 +1639,7 @@ export const createOrder = async (req, res) => {
               quantity: includedQuantity
             });
 
+            // Los productos fijos se repiten en cada pack.
             addStockRequirement(
               includedProduct,
               includedQuantity * quantity
@@ -1751,6 +1824,7 @@ export const createOrder = async (req, res) => {
     await session.endSession();
   }
 };
+
 
 
 /*=================================================

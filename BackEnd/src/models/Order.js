@@ -83,7 +83,11 @@ const promoSelectedProductSchema = new mongoose.Schema(
     quantity: {
       type: Number,
       required: true,
-      min: 1
+      min: 1,
+      validate: {
+        validator: Number.isInteger,
+        message: "La cantidad debe ser un número entero."
+      }
     }
   },
   { _id: false }
@@ -95,6 +99,19 @@ const promoSelectedProductSchema = new mongoose.Schema(
 
 const promoSelectionSchema = new mongoose.Schema(
   {
+    // Identifica a qué pack pertenece este grupo.
+    // Ejemplo: pack 1, pack 2, pack 3.
+    packIndex: {
+      type: Number,
+      required: true,
+      default: 1,
+      min: 1,
+      validate: {
+        validator: Number.isInteger,
+        message: "El número de promoción debe ser entero."
+      }
+    },
+
     group: {
       type: String,
       required: true,
@@ -130,7 +147,11 @@ const promoIncludedProductSchema = new mongoose.Schema(
     quantity: {
       type: Number,
       required: true,
-      min: 1
+      min: 1,
+      validate: {
+        validator: Number.isInteger,
+        message: "La cantidad debe ser un número entero."
+      }
     }
   },
   { _id: false }
@@ -158,7 +179,11 @@ const orderItemSchema = new mongoose.Schema(
     quantity: {
       type: Number,
       required: true,
-      min: 1
+      min: 1,
+      validate: {
+        validator: Number.isInteger,
+        message: "La cantidad debe ser un número entero."
+      }
     },
 
     // Precio unitario calculado por el backend.
@@ -173,7 +198,7 @@ const orderItemSchema = new mongoose.Schema(
       default: []
     },
 
-    // Selecciones variables de la promoción.
+    // Selecciones variables de cada pack de la promoción.
     promoSelections: {
       type: [promoSelectionSchema],
       default: []
