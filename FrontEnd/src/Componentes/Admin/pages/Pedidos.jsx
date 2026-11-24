@@ -95,6 +95,22 @@ const Pedidos = () => {
   const [error, setError] = useState("");
   const [updatingOrders, setUpdatingOrders] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [takeOrderOpen, setTakeOrderOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
+  const [manualCart, setManualCart] = useState([]);
+  const [selectedModifiers, setSelectedModifiers] = useState({});
+  const [sendingOrder, setSendingOrder] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    address: "",
+    notes: "",
+    deliveryType: "retiro",
+    paymentMethod: "Efectivo",
+  });
 
 const {
   newOrder,
@@ -802,6 +818,333 @@ const {
   };
 
   /* =====================================================
+     TOMAR PEDIDO MANUAL
+  ===================================================== */
+
+  const loadProducts = useCallback(async () => {
+    try {
+      setProductsLoading(true);
+      const response = await axios.get(`${API_URL}/products`);
+      const fetchedProducts = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.data?.products)
+          ? response.data.products
+          : [];
+
+      setProducts(
+        fetchedProducts.filter((product) => product.active !== false)
+      );
+    } catch (err) {
+      console.error("Error cargando productos:", err);
+      setProducts([]);
+    } finally {
+      setProductsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  const openTakeOrder = () => {
+    setTakeOrderOpen(true);
+    setProductSearch("");
+
+    if (products.length === 0) {
+      loadProducts();
+    }
+  };
+
+  const closeTakeOrder = () => {
+    if (sendingOrder) return;
+    setTakeOrderOpen(false);
+  };
+
+  const getProductId = (product) =>
+    String(product?._id || product?.id || "");
+
+  const createPromoSelections = (product, quantity = 1) => {
+    const groups = product?.promoConfig?.selectionGroups || [];
+    const selections = [];
+
+    for (let packIndex = 1; packIndex <= quantity; packIndex++) {
+      groups.forEach((group) => {
+        const allowedIds = (group.allowedProducts || []).map(String);
+        const firstProduct = products.find(
+          (item) => allowedIds.includes(getProductId(item))
+        );
+
+        if (firstProduct) {
+          selections.push({
+            packIndex,
+            group: group.name,
+            products: [{
+              product: getProductId(firstProduct),
+              quantity: Number(group.requiredQuantity) || 1,
+            }],
+          });
+        }
+      });
+    }
+
+    return selections;
+  };
+
+  const addManualProduct = (product) => {
+    const productId = getProductId(product);
+    if (!productId) return;
+
+    if (product.useStock) {
+      const stock = Number(product.stock) || 0;
+      if (stock <= 0) {
+        alert("Este producto no tiene stock disponible.");
+        return;
+      }
+    }
+
+    const modifiers = [];
+
+    (product.modifiers || [])
+      .filter((modifier) => modifier.active !== false)
+      .forEach((modifier) => {
+        const current = selectedModifiers[`${productId}-${modifier.name}`];
+
+        if (Array.isArray(current)) {
+          current.forEach((option) => {
+            modifiers.push({ group: modifier.name, option });
+          });
+        } else if (current) {
+          modifiers.push({ group: modifier.name, option: current });
+        }
+      });
+
+    const existingIndex = manualCart.findIndex((item) => {
+      if (item.productId !== productId) return false;
+
+      return (
+        JSON.stringify(item.modifiers) ===
+        JSON.stringify(modifiers)
+      );
+    });
+
+    if (existingIndex >= 0) {
+      setManualCart((previous) =>
+        previous.map((item, index) =>
+          index === existingIndex
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      );
+      return;
+    }
+
+    const configurablePromo =
+      product.isPromo === true &&
+      product.promoConfig?.enabled === true;
+
+    setManualCart((previous) => [
+      ...previous,
+      {
+        productId,
+        title: product.title,
+        price:
+          product.isPromo && product.promoPrice != null
+            ? Number(product.promoPrice)
+            : Number(product.price) || 0,
+        quantity: 1,
+        modifiers,
+        promoSelections:
+          configurablePromo
+            ? createPromoSelections(product, 1)
+            : [],
+      },
+    ]);
+  };
+
+  const updateManualQuantity = (index, quantity) => {
+    const nextQuantity = Number(quantity);
+    if (!Number.isInteger(nextQuantity) || nextQuantity < 1) return;
+
+    setManualCart((previous) =>
+      previous.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+
+        const product = products.find(
+          (candidate) => getProductId(candidate) === item.productId
+        );
+
+        const configurablePromo =
+          product?.isPromo === true &&
+          product?.promoConfig?.enabled === true;
+
+        return {
+          ...item,
+          quantity: nextQuantity,
+          promoSelections: configurablePromo
+            ? createPromoSelections(product, nextQuantity)
+            : item.promoSelections,
+        };
+      })
+    );
+  };
+
+  const updatePromoSelection = (
+    cartIndex,
+    packIndex,
+    groupName,
+    selectedProductId
+  ) => {
+    setManualCart((previous) =>
+      previous.map((item, index) => {
+        if (index !== cartIndex) return item;
+
+        const product = products.find(
+          (candidate) => getProductId(candidate) === item.productId
+        );
+        const group = product?.promoConfig?.selectionGroups?.find(
+          (candidate) => candidate.name === groupName
+        );
+
+        return {
+          ...item,
+          promoSelections: item.promoSelections.map((selection) =>
+            selection.packIndex === packIndex &&
+            selection.group === groupName
+              ? {
+                  ...selection,
+                  products: [{
+                    product: selectedProductId,
+                    quantity: Number(group?.requiredQuantity) || 1,
+                  }],
+                }
+              : selection
+          ),
+        };
+      })
+    );
+  };
+
+  const removeManualItem = (index) => {
+    setManualCart((previous) =>
+      previous.filter((_, itemIndex) => itemIndex !== index)
+    );
+  };
+
+  const manualCartTotal = manualCart.reduce(
+    (total, item) =>
+      total +
+      (Number(item.price) || 0) *
+      (Number(item.quantity) || 0),
+    0
+  );
+
+  const filteredProducts = products.filter((product) => {
+    const search = productSearch.trim().toLocaleLowerCase("es");
+    if (!search) return true;
+
+    return (
+      String(product.title || "").toLocaleLowerCase("es").includes(search) ||
+      String(product.category || "").toLocaleLowerCase("es").includes(search)
+    );
+  });
+
+  const submitManualOrder = async () => {
+    if (sendingOrder) return;
+
+    if (manualCart.length === 0) {
+      alert("Agregá al menos un producto al pedido.");
+      return;
+    }
+
+    if (
+      !manualForm.firstName.trim() ||
+      !manualForm.lastName.trim() ||
+      !manualForm.phone.trim()
+    ) {
+      alert("Completá nombre, apellido y teléfono.");
+      return;
+    }
+
+    if (
+      manualForm.deliveryType === "delivery" &&
+      !manualForm.address.trim()
+    ) {
+      alert("Ingresá la dirección de entrega.");
+      return;
+    }
+
+    const payload = {
+      customer: {
+        firstName: manualForm.firstName.trim(),
+        lastName: manualForm.lastName.trim(),
+        phone: manualForm.phone.trim(),
+        address:
+          manualForm.deliveryType === "delivery"
+            ? manualForm.address.trim()
+            : "",
+        notes: manualForm.notes.trim(),
+      },
+      deliveryType: manualForm.deliveryType,
+      paymentMethod: manualForm.paymentMethod,
+      items: manualCart.map((item) => ({
+        product: item.productId,
+        quantity: item.quantity,
+        modifiers: item.modifiers,
+        promoSelections: item.promoSelections,
+      })),
+    };
+
+    try {
+      setSendingOrder(true);
+      const response = await axios.post(
+        `${API_URL}/orders`,
+        payload
+      );
+
+      if (!response.data?.success || !response.data?.order) {
+        throw new Error(
+          response.data?.message ||
+          "No se pudo crear el pedido."
+        );
+      }
+
+      const createdOrder = response.data.order;
+      printOrder(createdOrder);
+      setOrders((previous) => [
+        createdOrder,
+        ...previous.filter(
+          (order) => order._id !== createdOrder._id
+        ),
+      ]);
+
+      alert(
+        `Pedido enviado correctamente. Número: ${createdOrder.orderNumber || ""}`
+      );
+
+      setManualCart([]);
+      setManualForm({
+        firstName: "",
+        lastName: "",
+        phone: "",
+        address: "",
+        notes: "",
+        deliveryType: "retiro",
+        paymentMethod: "Efectivo",
+      });
+      setTakeOrderOpen(false);
+    } catch (err) {
+      console.error("Error creando pedido manual:", err);
+      alert(
+        err.response?.data?.message ||
+        err.message ||
+        "No se pudo crear el pedido."
+      );
+    } finally {
+      setSendingOrder(false);
+    }
+  };
+
+  /* =====================================================
      PANTALLA DE CARGA
   ===================================================== */
 
@@ -875,6 +1218,14 @@ const {
             <span className="pedidos-live-dot" />
             Tiempo real
           </div>
+
+          <button
+            type="button"
+            className="pedidos-take-order-button"
+            onClick={openTakeOrder}
+          >
+            ＋ Tomar Pedido
+          </button>
 
           <button
             type="button"
@@ -999,6 +1350,459 @@ const {
           </div>
         )}
       </section>
+
+      {takeOrderOpen && (
+        <div
+          className="take-order-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeTakeOrder();
+            }
+          }}
+        >
+          <section
+            className="take-order-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Tomar pedido"
+          >
+            <header className="take-order-header">
+              <div>
+                <span className="pedidos-eyebrow">VENTA PRESENCIAL</span>
+                <h2>Tomar Pedido</h2>
+              </div>
+              <button
+                type="button"
+                className="take-order-close"
+                onClick={closeTakeOrder}
+                disabled={sendingOrder}
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="take-order-body">
+              <div className="take-order-products">
+                <label className="take-order-search">
+                  <span>Buscar producto</span>
+                  <input
+                    type="search"
+                    value={productSearch}
+                    onChange={(event) =>
+                      setProductSearch(event.target.value)
+                    }
+                    placeholder="Nombre o categoría..."
+                  />
+                </label>
+
+                {productsLoading ? (
+                  <div className="take-order-loading">
+                    <span className="pedidos-spinner" />
+                    Cargando productos...
+                  </div>
+                ) : (
+                  <div className="take-order-product-grid">
+                    {filteredProducts.map((product) => {
+                      const productId = getProductId(product);
+                      const modifiers =
+                        (product.modifiers || []).filter(
+                          (modifier) => modifier.active !== false
+                        );
+
+                      return (
+                        <article
+                          className="take-order-product"
+                          key={productId}
+                        >
+                          <div className="take-order-product-info">
+                            {product.image?.contentType && (
+                              <img
+                                src={`${API_URL}/products/${productId}/image`}
+                                alt=""
+                              />
+                            )}
+                            <div>
+                              <strong>{product.title}</strong>
+                              <span>{product.category}</span>
+                            </div>
+                            <b>
+                              $
+                              {formatMoney(
+                                product.isPromo &&
+                                product.promoPrice != null
+                                  ? product.promoPrice
+                                  : product.price
+                              )}
+                            </b>
+                          </div>
+
+                          {modifiers.length > 0 && (
+                            <div className="take-order-modifiers">
+                              {modifiers.map((modifier) => (
+                                <fieldset key={modifier.name}>
+                                  <legend>
+                                    {modifier.name}
+                                    {modifier.required ? " *" : ""}
+                                  </legend>
+                                  {(modifier.options || [])
+                                    .filter((option) => option.active !== false)
+                                    .map((option) => {
+                                      const stateKey =
+                                        `${productId}-${modifier.name}`;
+                                      const current =
+                                        selectedModifiers[stateKey];
+                                      const isChecked =
+                                        modifier.type === "multiple"
+                                          ? (Array.isArray(current)
+                                            ? current
+                                            : []
+                                          ).includes(option.label)
+                                          : current === option.label;
+
+                                      return (
+                                        <label key={option.label}>
+                                          <input
+                                            type={
+                                              modifier.type === "multiple"
+                                                ? "checkbox"
+                                                : "radio"
+                                            }
+                                            name={stateKey}
+                                            checked={isChecked}
+                                            onChange={() => {
+                                              setSelectedModifiers((previous) => {
+                                                if (modifier.type === "multiple") {
+                                                  const selected =
+                                                    Array.isArray(
+                                                      previous[stateKey]
+                                                    )
+                                                      ? previous[stateKey]
+                                                      : [];
+
+                                                  return {
+                                                    ...previous,
+                                                    [stateKey]: isChecked
+                                                      ? selected.filter(
+                                                        (value) =>
+                                                          value !== option.label
+                                                      )
+                                                      : [...selected, option.label],
+                                                  };
+                                                }
+
+                                                return {
+                                                  ...previous,
+                                                  [stateKey]: option.label,
+                                                };
+                                              });
+                                            }}
+                                          />
+                                          <span>
+                                            {option.label}
+                                            {Number(option.price) > 0 &&
+                                              ` (+$${formatMoney(option.price)})`}
+                                          </span>
+                                        </label>
+                                      );
+                                    })}
+                                </fieldset>
+                              ))}
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            className="take-order-add"
+                            onClick={() => addManualProduct(product)}
+                            disabled={
+                              product.useStock &&
+                              (Number(product.stock) || 0) <= 0
+                            }
+                          >
+                            {product.useStock &&
+                            (Number(product.stock) || 0) <= 0
+                              ? "Sin stock"
+                              : "+ Agregar"}
+                          </button>
+                        </article>
+                      );
+                    })}
+
+                    {filteredProducts.length === 0 && !productsLoading && (
+                      <div className="take-order-empty">
+                        No se encontraron productos.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <aside className="take-order-cart">
+                <h3>Datos del cliente</h3>
+
+                <div className="take-order-form-grid">
+                  <label>
+                    Nombre *
+                    <input
+                      value={manualForm.firstName}
+                      onChange={(event) =>
+                        setManualForm((previous) => ({
+                          ...previous,
+                          firstName: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Apellido *
+                    <input
+                      value={manualForm.lastName}
+                      onChange={(event) =>
+                        setManualForm((previous) => ({
+                          ...previous,
+                          lastName: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Teléfono *
+                    <input
+                      value={manualForm.phone}
+                      onChange={(event) =>
+                        setManualForm((previous) => ({
+                          ...previous,
+                          phone: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Entrega
+                    <select
+                      value={manualForm.deliveryType}
+                      onChange={(event) =>
+                        setManualForm((previous) => ({
+                          ...previous,
+                          deliveryType: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="retiro">Retiro en local</option>
+                      <option value="delivery">Delivery</option>
+                    </select>
+                  </label>
+                  {manualForm.deliveryType === "delivery" && (
+                    <label className="take-order-full">
+                      Dirección *
+                      <input
+                        value={manualForm.address}
+                        onChange={(event) =>
+                          setManualForm((previous) => ({
+                            ...previous,
+                            address: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  )}
+                  <label>
+                    Pago
+                    <select
+                      value={manualForm.paymentMethod}
+                      onChange={(event) =>
+                        setManualForm((previous) => ({
+                          ...previous,
+                          paymentMethod: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="Efectivo">Efectivo</option>
+                      <option value="Transferencia">Transferencia</option>
+                      <option value="Tarjeta">Tarjeta</option>
+                    </select>
+                  </label>
+                  <label className="take-order-full">
+                    Observaciones
+                    <textarea
+                      value={manualForm.notes}
+                      onChange={(event) =>
+                        setManualForm((previous) => ({
+                          ...previous,
+                          notes: event.target.value,
+                        }))
+                      }
+                      rows="2"
+                    />
+                  </label>
+                </div>
+
+                <div className="take-order-cart-heading">
+                  <h3>Carrito</h3>
+                  <span>{manualCart.length} líneas</span>
+                </div>
+
+                <div className="take-order-cart-items">
+                  {manualCart.length === 0 ? (
+                    <div className="take-order-cart-empty">
+                      Todavía no agregaste productos.
+                    </div>
+                  ) : (
+                    manualCart.map((item, index) => {
+                      const product = products.find(
+                        (candidate) =>
+                          getProductId(candidate) === item.productId
+                      );
+                      const configurablePromo =
+                        product?.isPromo === true &&
+                        product?.promoConfig?.enabled === true;
+
+                      return (
+                        <article
+                          className="take-order-cart-item"
+                          key={`${item.productId}-${index}`}
+                        >
+                          <div className="take-order-cart-item-main">
+                            <strong>{item.title}</strong>
+                            <button
+                              type="button"
+                              onClick={() => removeManualItem(index)}
+                              aria-label={`Eliminar ${item.title}`}
+                            >
+                              ×
+                            </button>
+                          </div>
+
+                          {item.modifiers.length > 0 && (
+                            <div className="take-order-cart-modifiers">
+                              {item.modifiers.map((modifier) => (
+                                <span key={`${modifier.group}-${modifier.option}`}>
+                                  {modifier.group}: {modifier.option}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {configurablePromo && (
+                            <div className="take-order-promo-selections">
+                              {Array.from(
+                                { length: item.quantity },
+                                (_, packOffset) => packOffset + 1
+                              ).map((packIndex) =>
+                                (product.promoConfig.selectionGroups || []).map(
+                                  (group) => {
+                                    const allowedIds =
+                                      (group.allowedProducts || []).map(String);
+                                    const allowedProducts =
+                                      products.filter((candidate) =>
+                                        allowedIds.includes(
+                                          getProductId(candidate)
+                                        )
+                                      );
+                                    const selection =
+                                      item.promoSelections.find(
+                                        (candidate) =>
+                                          candidate.packIndex === packIndex &&
+                                          candidate.group === group.name
+                                      );
+                                    const selectedId =
+                                      selection?.products?.[0]?.product || "";
+
+                                    return (
+                                      <label
+                                        key={`${packIndex}-${group.name}`}
+                                      >
+                                        Pack {packIndex} · {group.name}
+                                        <select
+                                          value={selectedId}
+                                          onChange={(event) =>
+                                            updatePromoSelection(
+                                              index,
+                                              packIndex,
+                                              group.name,
+                                              event.target.value
+                                            )
+                                          }
+                                        >
+                                          {allowedProducts.map((allowed) => (
+                                            <option
+                                              key={getProductId(allowed)}
+                                              value={getProductId(allowed)}
+                                            >
+                                              {allowed.title}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </label>
+                                    );
+                                  }
+                                )
+                              )}
+                            </div>
+                          )}
+
+                          <div className="take-order-cart-item-bottom">
+                            <div className="take-order-quantity">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateManualQuantity(
+                                    index,
+                                    item.quantity - 1
+                                  )
+                                }
+                              >
+                                −
+                              </button>
+                              <span>{item.quantity}</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateManualQuantity(
+                                    index,
+                                    item.quantity + 1
+                                  )
+                                }
+                              >
+                                +
+                              </button>
+                            </div>
+                            <strong>
+                              $
+                              {formatMoney(
+                                (Number(item.price) || 0) *
+                                item.quantity
+                              )}
+                            </strong>
+                          </div>
+                        </article>
+                      );
+                    })
+                  )}
+                </div>
+
+                <footer className="take-order-footer">
+                  <div>
+                    <span>Total</span>
+                    <strong>${formatMoney(manualCartTotal)}</strong>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={submitManualOrder}
+                    disabled={sendingOrder || manualCart.length === 0}
+                  >
+                    {sendingOrder
+                      ? "Enviando..."
+                      : "Enviar comanda"}
+                  </button>
+                </footer>
+              </aside>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 };

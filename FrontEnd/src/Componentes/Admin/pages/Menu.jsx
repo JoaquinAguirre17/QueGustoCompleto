@@ -123,7 +123,11 @@ const Menu = () => {
   const getProductImageUrl = (product) => {
     if (!product?._id || !product?.image?.contentType) return "";
 
-    return `${API}/products/${product._id}/image`;
+    const version = product.updatedAt
+      ? `?v=${encodeURIComponent(product.updatedAt)}`
+      : "";
+
+    return `${API}/products/${product._id}/image${version}`;
   };
 
   const normalizeId = (item) => {
