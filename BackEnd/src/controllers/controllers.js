@@ -80,7 +80,9 @@ export const getProductImage = async (req, res) => {
     }
 
     res.set("Content-Type", product.image.contentType);
-    res.set("Cache-Control", "public, max-age=86400");
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
 
     return res.send(product.image.data);
 
@@ -830,6 +832,7 @@ export const updateProduct = async (req, res) => {
         data: req.file.buffer,
         contentType: req.file.mimetype
       };
+      product.markModified("image");
     }
 
     /* ==========================================
